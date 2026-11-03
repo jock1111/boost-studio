@@ -231,6 +231,19 @@ public static class DspMath
         if (maxBoost <= 0.01)
             return 0;
 
+        // For bass-only configurations, reserve less headroom to allow audible bass boost.
+        // The low-shelf filter adds gain at low frequencies; if we reserve full headroom,
+        // the preamp cancels the boost entirely, making it inaudible.
+        var isBassOnly = settings.Bass.Enabled && settings.Bass.EffectiveGainDb > 0.01
+            && !settings.Volume.Enabled
+            && !settings.Equalizer.Enabled;
+
+        if (isBassOnly)
+        {
+            // Reserve ~30% of max boost for safety, leaving ~70% as audible boost
+            return Math.Round(Math.Min(maxBoost * 0.3, maxBoost + SafetyMarginDb), 1);
+        }
+
         return Math.Round(maxBoost + SafetyMarginDb, 1);
     }
 

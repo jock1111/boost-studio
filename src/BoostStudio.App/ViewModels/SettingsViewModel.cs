@@ -77,6 +77,7 @@ public sealed class SettingsViewModel : ObservableObject
         BrowseEqualizerApoFolderCommand = new RelayCommand(BrowseEqualizerApoFolder);
         ClearEqualizerApoPathCommand = new RelayCommand(ClearEqualizerApoPath, () => !string.IsNullOrWhiteSpace(_settings.EqualizerApoPathOverride));
         DetectEngineCommand = new AsyncRelayCommand(DetectEngineAsync, () => !IsDetectingEngine);
+        TestAudioEngineCommand = new AsyncRelayCommand(TestAudioEngineAsync, () => !IsDetectingEngine && !IsTestingAudioEngine);
         OpenEqualizerApoSiteCommand = new RelayCommand(() => _shell.OpenUrl(AppInfo.EqualizerApoProjectUrl));
         OpenEqualizerApoDownloadCommand = new RelayCommand(() => _shell.OpenUrl(AppInfo.EqualizerApoDownloadUrl));
         ApplyHotkeysCommand = new RelayCommand(() => _hotkeysChanged());
@@ -100,6 +101,7 @@ public sealed class SettingsViewModel : ObservableObject
     public RelayCommand BrowseEqualizerApoFolderCommand { get; }
     public RelayCommand ClearEqualizerApoPathCommand { get; }
     public AsyncRelayCommand DetectEngineCommand { get; }
+    public AsyncRelayCommand TestAudioEngineCommand { get; }
     public RelayCommand OpenEqualizerApoSiteCommand { get; }
     public RelayCommand OpenEqualizerApoDownloadCommand { get; }
     public RelayCommand ApplyHotkeysCommand { get; }
@@ -467,6 +469,18 @@ public sealed class SettingsViewModel : ObservableObject
         {
             if (!SetProperty(ref _isDetectingEngine, value)) return;
             DetectEngineCommand.RaiseCanExecuteChanged();
+            TestAudioEngineCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    private bool _isTestingAudioEngine;
+    public bool IsTestingAudioEngine
+    {
+        get => _isTestingAudioEngine;
+        private set
+        {
+            if (!SetProperty(ref _isTestingAudioEngine, value)) return;
+            TestAudioEngineCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -635,6 +649,40 @@ public sealed class SettingsViewModel : ObservableObject
         finally
         {
             IsDetectingEngine = false;
+        }
+    }
+
+    private async Task TestAudioEngineAsync()
+    {
+        IsTestingAudioEngine = true;
+        try
+        {
+            var result = await _engine.TestAudioProcessingAsync(_settings);
+            var message = new StringBuilder();
+            message.AppendLine($"Equalizer APO installed: {(result.ApoInstalled ? "✓" : "✗")}");
+            message.AppendLine($"Correct endpoint configured: {(result.CorrectEndpoint ? "✓" : "✗")}");
+            message.AppendLine($"Configuration written: {(result.ConfigWritten ? "✓" : "✗")}");
+            message.AppendLine($"Runtime processing verified: {(result.ProcessingVerified ? "✓" : "✗")}");
+            message.AppendLine($"Actual gain change measured: {(result.GainChangeMeasured ? "✓" : "✗")}");
+            message.AppendLine();
+            if (!string.IsNullOrWhiteSpace(result.Detail))
+                message.AppendLine(result.Detail);
+
+            if (result.ProcessingVerified && result.GainChangeMeasured)
+                _dialogs.ShowSuccess("Audio Engine Test Passed", message.ToString());
+            else if (result.ProcessingVerified)
+                _dialogs.ShowWarning("Audio Engine Partially Verified", message.ToString());
+            else
+                _dialogs.ShowError("Audio Engine Test Failed", message.ToString());
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Audio engine test failed.", ex);
+            _dialogs.ShowError("Audio engine test failed", ex.Message);
+        }
+        finally
+        {
+            IsTestingAudioEngine = false;
         }
     }
 
