@@ -1,0 +1,480 @@
+<UserControl x:Class="BoostStudio.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:BoostStudio.App.Controls"
+             xmlns:vm="clr-namespace:BoostStudio.App.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1100"
+             Foreground="{StaticResource TextPrimaryBrush}">
+    <StackPanel>
+
+        <!-- Hero -->
+        <Border CornerRadius="18" BorderBrush="#23424A" BorderThickness="1" Padding="28,25"
+                ClipToBounds="True">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#172932" Offset="0" />
+                    <GradientStop Color="#10212A" Offset="0.5" />
+                    <GradientStop Color="#0D171F" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="248" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource StatusPill}" Background="#102A28"
+                                BorderBrush="#2A5B54" Margin="0,0,12,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource AccentBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,7,0" />
+                                <TextBlock Text="{Binding MasterStatus}" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="{Binding Greeting}" Style="{StaticResource Caption}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding HeroTitle}" FontFamily="{StaticResource DisplayFont}"
+                               FontSize="30" FontWeight="SemiBold" Margin="0,16,0,0"
+                               TextWrapping="Wrap" MaxWidth="660" />
+                    <TextBlock Text="{Binding HeroSubtitle}" Style="{StaticResource Secondary}"
+                               Margin="0,7,0,0" TextWrapping="Wrap" MaxWidth="630" />
+                    <TextBlock Text="{Binding HeroStatus}" Style="{StaticResource Caption}"
+                               Margin="0,12,0,0" TextWrapping="Wrap" MaxWidth="650" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                        <Border Style="{StaticResource MetricTile}" Padding="14,10" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ActiveCountText}" FontSize="12"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="MODULES" Style="{StaticResource SectionLabel}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Padding="14,10" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding FilterCountText}" FontSize="12"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="DSP CHAIN" Style="{StaticResource SectionLabel}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Padding="14,10">
+                            <StackPanel>
+                                <TextBlock Text="{Binding HeadroomText}" FontSize="12"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="HEADROOM" Style="{StaticResource SectionLabel}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="1" Style="{StaticResource InnerCard}" Margin="24,0,0,0"
+                        Background="#0C171E" BorderBrush="#22404A" Padding="18">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="MASTER PROCESSING" Style="{StaticResource SectionLabel}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <CheckBox Style="{StaticResource ToggleSwitch}"
+                                      IsChecked="{Binding ProcessingEnabled, Mode=TwoWay}"
+                                      ToolTip="Bypass or apply all Boost Studio processing" />
+                            <TextBlock Text="{Binding MasterStatus}" FontSize="12" FontWeight="SemiBold"
+                                       Margin="11,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Engine.Summary}" Style="{StaticResource Caption}"
+                                   Margin="0,14,0,0" TextWrapping="Wrap" MaxHeight="46"
+                                   TextTrimming="CharacterEllipsis" />
+                        <Button Content="Engine &amp; devices" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="settings"
+                                HorizontalAlignment="Left" Margin="0,16,0,0" Height="34" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Live output + engine -->
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.7*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}" Padding="20">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Live output" Style="{StaticResource H3}" />
+                            <TextBlock Text="{Binding Monitor.DeviceName}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Style="{StaticResource StatusPill}" Padding="9,4">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="5" Height="5" Fill="{StaticResource AccentBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBlock Text="POST-MIX LOOPBACK" FontSize="9" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <controls:SpectrumDisplay Height="142" Margin="0,14,0,0"
+                                              Values="{Binding Monitor.Levels}"
+                                              Active="{Binding Monitor.IsActive}"
+                                              HighlightBass="True" />
+
+                    <controls:LevelMeter Height="7" Margin="0,12,0,0"
+                                         PeakDb="{Binding Monitor.PeakDb}"
+                                         RmsDb="{Binding Monitor.RmsDb}"
+                                         PeakHoldDb="{Binding Monitor.PeakHoldDb}"
+                                         Clipping="{Binding Monitor.IsClipping}" />
+
+                    <Grid Margin="0,11,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel>
+                                <TextBlock Text="PEAK" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding Monitor.PeakText}" FontSize="12" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+                            <Border Style="{StaticResource TinyDivider}" Height="26" Margin="18,0" />
+                            <StackPanel>
+                                <TextBlock Text="RMS" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding Monitor.RmsText}" FontSize="12" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+                            <Border Style="{StaticResource TinyDivider}" Height="26" Margin="18,0" />
+                            <StackPanel>
+                                <TextBlock Text="BASS PEAK" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding Monitor.DominantBassText}" FontSize="12"
+                                           FontWeight="SemiBold" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+                            <Button Content="Bass tone" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding TestTone.PlayBassCommand}" Margin="0,0,6,0" />
+                            <Button Content="Level tone" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding TestTone.PlayLevelCommand}" Margin="0,0,6,0" />
+                            <Button Content="Stop" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding TestTone.StopCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Background="#2B181A" BorderBrush="#6B2C2E" BorderThickness="1"
+                            CornerRadius="9" Padding="10,7" Margin="0,12,0,0"
+                            Visibility="{Binding Monitor.ClipWarning, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                       Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Output is clipping. Reduce boost, bass or EQ gain."
+                                       FontSize="11" Foreground="#FFC7C3" Margin="8,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource IconBadge}" Width="38" Height="38"
+                                Background="{Binding Engine.StateBackgroundBrush}"
+                                BorderBrush="#2A3F4D">
+                            <TextBlock Text="{Binding Engine.StatusGlyph}" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="16" Foreground="{Binding Engine.StateBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Signal engine" Style="{StaticResource H3}" />
+                            <TextBlock Text="{Binding Engine.VersionText}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding Engine.StateHeader}" FontSize="12" FontWeight="SemiBold"
+                               TextWrapping="Wrap" Margin="0,15,0,0" />
+                    <TextBlock Text="{Binding Engine.Summary}" Style="{StaticResource Secondary}"
+                               TextWrapping="Wrap" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding Engine.Detail}" Style="{StaticResource Caption}"
+                               TextWrapping="Wrap" Margin="0,5,0,0"
+                               Visibility="{Binding Engine.HasDetail, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Text="{Binding Engine.VerificationText}" Style="{StaticResource Caption}"
+                               TextWrapping="Wrap" Margin="0,7,0,0"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+
+                    <Border Style="{StaticResource Divider}" Margin="0,14" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="PREAMP" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding Engine.PreampText}" FontSize="12" FontWeight="SemiBold"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="LAST APPLIED" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding Engine.LastAppliedText}" FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Content="Set up Equalizer APO" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding Engine.InstallCommand}"
+                                Visibility="{Binding Engine.IsMissing, Converter={StaticResource BoolToVis}}"
+                                Height="34" Padding="14,0" />
+                        <Button Content="Fix APO device setup" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="settings"
+                                Visibility="{Binding Engine.IsApoNotEnabled, Converter={StaticResource BoolToVis}}"
+                                Height="34" Padding="14,0" Margin="0,0,6,0" />
+                        <Button Content="Open engine settings" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="settings"
+                                Height="34" Padding="14,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Module cards -->
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Bass -->
+            <Border Grid.Column="0" Style="{StaticResource CardHover}" Padding="19" MinHeight="226">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource IconBadge}" Background="#19162A" BorderBrush="#352A55">
+                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="17"
+                                       Foreground="{StaticResource VioletBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Bass Booster" Style="{StaticResource H3}" />
+                            <TextBlock Text="{Binding Bass.SelectedPreset.Name}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="2" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding Bass.Enabled, Mode=TwoWay}"
+                                  ToolTip="Enable or bypass Bass Booster" />
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Margin="0,15,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Bass.GainText}" FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="27" FontWeight="SemiBold" Foreground="#D6C6FF" />
+                            <TextBlock Text="{Binding Bass.FrequencyText}" Style="{StaticResource Caption}"
+                                       VerticalAlignment="Bottom" Margin="9,0,0,4" />
+                        </StackPanel>
+                        <controls:ResponseCurve Height="54" Margin="0,8,0,0"
+                                                Values="{Binding Bass.Response}"
+                                                MinFrequency="20" MaxFrequency="320"
+                                                MinDb="-2" MaxDb="26" ShowLabels="False"
+                                                Accent="{StaticResource VioletBrush}" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Bass.EffectiveGainDescription}" Style="{StaticResource Caption}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="1" Content="Open" Style="{StaticResource LinkButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="bass" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Volume -->
+            <Border Grid.Column="2" Style="{StaticResource CardHover}" Padding="19" MinHeight="226">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource IconBadge}" Background="#0F2431" BorderBrush="#234455">
+                            <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="17"
+                                       Foreground="{StaticResource BlueBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Volume Booster" Style="{StaticResource H3}" />
+                            <TextBlock Text="{Binding VolumePresetText}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="2" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding Volume.Enabled, Mode=TwoWay}"
+                                  ToolTip="Enable or bypass Volume Booster" />
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Margin="0,15,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Volume.BoostText}" FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="27" FontWeight="SemiBold" Foreground="#A8E2FF" />
+                            <TextBlock Text="{Binding Volume.LoudnessText}" Style="{StaticResource Caption}"
+                                       VerticalAlignment="Bottom" Margin="9,0,0,4" />
+                        </StackPanel>
+                        <controls:LevelMeter Height="7" Margin="0,13,0,0"
+                                             PeakDb="{Binding Monitor.PeakDb}"
+                                             RmsDb="{Binding Monitor.RmsDb}"
+                                             PeakHoldDb="{Binding Monitor.PeakHoldDb}"
+                                             Clipping="{Binding Monitor.IsClipping}" />
+                        <TextBlock Text="{Binding Volume.SignalPathText}" Style="{StaticResource Caption}"
+                                   Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Volume.AgcStatus}" Style="{StaticResource Caption}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="Open" Style="{StaticResource LinkButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="volume" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Equalizer -->
+            <Border Grid.Column="4" Style="{StaticResource CardHover}" Padding="19" MinHeight="226">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource IconBadge}" Background="#0D2725" BorderBrush="#24534E">
+                            <TextBlock Text="&#xE9E9;" FontFamily="Segoe MDL2 Assets" FontSize="17"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Equalizer" Style="{StaticResource H3}" />
+                            <TextBlock Text="{Binding Equalizer.SelectedPresetName}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="2" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding Equalizer.Enabled, Mode=TwoWay}"
+                                  ToolTip="Enable or bypass the equalizer" />
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Margin="0,15,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="10-band" FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="27" FontWeight="SemiBold" Foreground="#A5F3EA" />
+                            <TextBlock Text="{Binding Equalizer.BandSummary}" Style="{StaticResource Caption}"
+                                       VerticalAlignment="Bottom" Margin="9,0,0,4" />
+                        </StackPanel>
+                        <controls:ResponseCurve Height="54" Margin="0,8,0,0"
+                                                Values="{Binding Equalizer.Response}"
+                                                MinFrequency="20" MaxFrequency="20000"
+                                                MinDb="-13" MaxDb="13" ShowLabels="False"
+                                                Accent="{StaticResource AccentBrush}" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Equalizer.Description}" Style="{StaticResource Caption}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="1" Content="Open" Style="{StaticResource LinkButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="equalizer" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Signal path / notes -->
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0" Padding="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.6*" />
+                    <ColumnDefinition Width="22" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="How the chain works" Style="{StaticResource H3}" />
+                    <TextBlock Style="{StaticResource Secondary}" Margin="0,7,0,0" TextWrapping="Wrap">
+                        Windows mixes every application into the selected output. Equalizer APO inserts
+                        Boost Studio's low-shelf, preamp and peaking filters after that mix. The meters and
+                        spectrum above measure the real post-processing loopback signal.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Content="Tune bass" Style="{StaticResource SubtleButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="bass" Margin="0,0,6,0" />
+                        <Button Content="Manage boost" Style="{StaticResource SubtleButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="volume" Margin="0,0,6,0" />
+                        <Button Content="Shape EQ" Style="{StaticResource SubtleButton}"
+                                Command="{Binding NavigateCommand}" CommandParameter="equalizer" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="2" Style="{StaticResource InnerCard}" Background="#101A14"
+                        BorderBrush="#29412A">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                       Foreground="{StaticResource WarningBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Measurement note" FontSize="11.5" FontWeight="SemiBold"
+                                       Margin="7,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Caption}" Margin="0,7,0,0" TextWrapping="Wrap"
+                                   Text="Loopback metering reflects what Windows sends to the output after APO processing. Exclusive-mode and ASIO streams bypass this path and cannot be measured or processed here." />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </StackPanel>
+</UserControl>

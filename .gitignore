@@ -1,0 +1,76 @@
+# Build outputs
+bin/
+obj/
+out/
+*.pdb
+*.ilk
+*.exp
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.sln.docstates
+
+# .NET
+*.cache
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.deps.json
+*.runtimeconfig.json
+
+# Test results
+TestResults/
+*.coverage
+*.coveragexml
+coverage/
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Build artifacts specific to this project
+artifacts/publish-x64/
+artifacts/*.zip
+artifacts/*.msi
+artifacts/*.wixpdb
+
+# Verification scripts (not part of source)
+check-build.bat
+check-start.ps1
+exit-status.txt
+exit.txt
+final-check.ps1
+final.ps1
+native-start.bat
+notification.txt
+run-verification.ps1
+run.bat
+start-app.bat
+verify-run.ps1
+
+# Final report (not source)
+.headroom/FINAL_REPORT.md

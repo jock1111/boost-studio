@@ -1,0 +1,722 @@
+<UserControl x:Class="BoostStudio.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:BoostStudio.App.Controls"
+             xmlns:vm="clr-namespace:BoostStudio.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+             d:DesignWidth="1100"
+             Foreground="{StaticResource TextPrimaryBrush}">
+    <StackPanel>
+
+        <!-- Intro -->
+        <Border CornerRadius="18" BorderBrush="#22343F" BorderThickness="1" Padding="26,20">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#14212B" Offset="0" />
+                    <GradientStop Color="#101922" Offset="0.6" />
+                    <GradientStop Color="#0D151D" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource IconBadge}" Width="50" Height="50" CornerRadius="14">
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="21"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="15,0,20,0" VerticalAlignment="Center">
+                    <TextBlock Text="Preferences &amp; engine" Style="{StaticResource H2}" />
+                    <TextBlock Text="Changes are applied immediately and saved automatically. Nothing here leaves your PC."
+                               Style="{StaticResource Secondary}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+                <Border Grid.Column="2" Style="{StaticResource StatusPill}" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding VersionText}" FontSize="10.5"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Engine -->
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+            <Grid DataContext="{Binding DataContext.Engine, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource IconBadge}"
+                                Background="{Binding StateBackgroundBrush}" BorderBrush="#2A3F4D">
+                            <TextBlock Text="{Binding StatusGlyph}" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18" Foreground="{Binding StateBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="13,0,20,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Equalizer APO engine" Style="{StaticResource H3}" />
+                                <Border Style="{StaticResource StatusPill}" Margin="10,0,0,0" Padding="9,3"
+                                        Background="{Binding StateBackgroundBrush}" BorderBrush="#2A3F4D">
+                                    <TextBlock Text="{Binding StateLabel}" FontSize="9.5" FontWeight="SemiBold"
+                                               Foreground="{Binding StateBrush}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding StateHeader}" Style="{StaticResource Secondary}"
+                                       Margin="0,4,0,0" />
+                            <TextBlock Text="{Binding Summary}" Style="{StaticResource Caption}"
+                                       Margin="0,3,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Re-detect" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding RefreshCommand}" Height="34" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Background="#2B2314" BorderBrush="#5E4A24" BorderThickness="1" CornerRadius="9"
+                            Padding="11,8" Margin="0,13,0,0"
+                            Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}"
+                                   Foreground="#E9D49F" TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border Background="#0F1A23" BorderBrush="#22343F" BorderThickness="1" CornerRadius="9"
+                            Padding="11,8" Margin="0,10,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top"
+                                       Margin="0,1,8,0" />
+                            <TextBlock Text="{Binding VerificationText}" Style="{StaticResource Caption}"
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#2B1C16" BorderBrush="#6A3D2C" BorderThickness="1" CornerRadius="9"
+                            Padding="11,8" Margin="0,10,0,0"
+                            Visibility="{Binding NeedsPermission, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Equalizer APO's config folder requires write access. Grant it once for your standard user, or restart elevated for this session."
+                                       Style="{StaticResource Caption}" Foreground="#F4C7A8"
+                                       TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                                <Button Content="Grant access once"
+                                        Style="{StaticResource PrimaryButton}" Height="32" Padding="12,0"
+                                        Command="{Binding GrantAccessCommand}"
+                                        Visibility="{Binding CanGrantAccess, Converter={StaticResource BoolToVis}}" />
+                                <Button Content="Restart elevated"
+                                        Style="{StaticResource SecondaryButton}" Height="32" Margin="8,0,0,0"
+                                        Command="{Binding RestartElevatedCommand}"
+                                        Visibility="{Binding IsElevated, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Background="#2B2314" BorderBrush="#5E4A24" BorderThickness="1" CornerRadius="9"
+                            Padding="11,8" Margin="0,10,0,0"
+                            Visibility="{Binding IsApoNotEnabled, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="The DSP file was written, but Windows has no Equalizer APO APO registered on the target output. Enable it in Equalizer APO's Device Selector, then recheck."
+                                       Style="{StaticResource Caption}" Foreground="#E9D49F"
+                                       TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                                <Button Content="Device selector" Style="{StaticResource SecondaryButton}"
+                                        Height="32" Padding="12,0"
+                                        Command="{Binding OpenDeviceSelectorCommand}" />
+                                <Button Content="Recheck" Style="{StaticResource SubtleButton}"
+                                        Height="32" Margin="8,0,0,0"
+                                        Command="{Binding RefreshCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <UniformGrid Columns="4" Margin="0,13,0,0">
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="VERSION" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding VersionText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="ACTIVE FILTERS" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding FilterSummary}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="PREAMP" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding PreampText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="HEADROOM" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding HeadroomText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="CONFIG ACCESS" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding ConfigWriteText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="LAST APPLIED" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding LastAppliedText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="INCLUDE" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding ConnectionDetail}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="SESSION" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding ElevationText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource MetricTile}" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="APO STATUS" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding ApoStatusText}" FontSize="11.5" FontWeight="SemiBold"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding ApoDeviceCountText}" Style="{StaticResource Caption}"
+                                           Margin="0,3,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Grid Margin="0,3,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="82" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="INSTALL" Style="{StaticResource SectionLabel}" VerticalAlignment="Top"
+                                   Margin="0,3,0,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding InstallPath}" Style="{StaticResource MonoText}"
+                                   Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid Margin="0,2,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="82" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="CONFIG" Style="{StaticResource SectionLabel}" VerticalAlignment="Top"
+                                   Margin="0,3,0,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding ConfigPath}" Style="{StaticResource MonoText}"
+                                   Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                    </Grid>
+
+                    <WrapPanel Margin="0,13,0,0">
+                        <Button Content="Install Equalizer APO" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding InstallCommand}" Height="34" Padding="14,0" Margin="0,0,7,7"
+                                Visibility="{Binding IsMissing, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Connect / repair" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ConnectCommand}" Height="34" Padding="14,0" Margin="0,0,7,7"
+                                IsEnabled="{Binding CanConnect}"
+                                Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Disconnect" Style="{StaticResource SubtleButton}"
+                                Command="{Binding DisconnectCommand}" Height="34" Margin="0,0,7,7"
+                                IsEnabled="{Binding CanDisconnect}"
+                                Visibility="{Binding IsIntegrated, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Restore baseline" Style="{StaticResource SubtleButton}"
+                                Command="{Binding RestoreBaselineCommand}" Height="34" Margin="0,0,7,7"
+                                IsEnabled="{Binding CanRestoreBaseline}"
+                                Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Preview DSP file" Style="{StaticResource SubtleButton}"
+                                Command="{Binding PreviewConfigCommand}" Height="34" Margin="0,0,7,7" />
+                        <Button Content="Open config folder" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenConfigFolderCommand}" Height="34" Margin="0,0,7,7" />
+                        <Button Content="Open config.txt" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenConfigFileCommand}" Height="34" Margin="0,0,7,7" />
+                        <Button Content="Open APO editor" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenEditorCommand}" Height="34" Margin="0,0,7,7" />
+                        <Button Content="Device selector" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenDeviceSelectorCommand}" Height="34" Margin="0,0,7,7" />
+                        <Button Content="Open log" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenLogCommand}" Height="34" Margin="0,0,7,7" />
+                        <Button Content="Grant access once" Style="{StaticResource SubtleButton}"
+                                Command="{Binding GrantAccessCommand}" Height="34" Margin="0,0,7,7"
+                                Visibility="{Binding CanGrantAccess, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Restart as administrator" Style="{StaticResource SubtleButton}"
+                                Command="{Binding RestartElevatedCommand}" Height="34" Margin="0,0,7,7"
+                                Visibility="{Binding IsElevated, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Audio + application -->
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.15*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Audio output" Style="{StaticResource H3}" />
+                            <TextBlock Text="Choose what Boost Studio meters. Processing output is configured below."
+                                       Style="{StaticResource Caption}" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding DeviceCountText}" Style="{StaticResource SectionLabel}"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Follow the Windows default output" FontSize="12" FontWeight="SemiBold" />
+                            <TextBlock Text="Automatically restart monitoring when the default device changes."
+                                       Style="{StaticResource Caption}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding MonitorDefaultDevice, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="14,0,0,0" />
+                    </Grid>
+
+                    <ComboBox Margin="0,12,0,0" ItemsSource="{Binding Devices}"
+                              SelectedItem="{Binding SelectedMonitoringDevice, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              IsEnabled="{Binding DeviceComboEnabled}"
+                              ToolTip="Pin monitoring to a specific render device" />
+
+                    <TextBlock Text="{Binding SelectedDeviceSummary}" Style="{StaticResource Caption}"
+                               Margin="0,7,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding DeviceAvailabilityText}" Style="{StaticResource Caption}"
+                               Margin="0,3,0,0" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+
+                    <Border Style="{StaticResource Divider}" Margin="0,14,0,12" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Processing output" FontSize="12" FontWeight="SemiBold" />
+                            <TextBlock Text="Where Equalizer APO applies Boost Studio DSP. This is independent from the monitoring device."
+                                       Style="{StaticResource Caption}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                            <TextBlock Text="All APO outputs" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <CheckBox Style="{StaticResource ToggleSwitch}"
+                                      IsChecked="{Binding ApplyToAllDevices, Mode=TwoWay}"
+                                      ToolTip="Apply DSP to every output that has Equalizer APO enabled" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ComboBox Margin="0,12,0,0" ItemsSource="{Binding Devices}"
+                              SelectedItem="{Binding SelectedProcessingDevice, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              IsEnabled="{Binding ProcessingDeviceComboEnabled}"
+                              ToolTip="Pin processing to one output. The Windows default device is not changed." />
+
+                    <TextBlock Text="{Binding ProcessingScopeSummary}" Style="{StaticResource Caption}"
+                               Margin="0,7,0,0" TextWrapping="Wrap" />
+
+                    <Border Background="#2B2314" BorderBrush="#5E4A24" BorderThickness="1" CornerRadius="8"
+                            Padding="10,7" Margin="0,8,0,0"
+                            Visibility="{Binding HasProcessingApoWarning, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource Caption}" Foreground="#E9D49F" TextWrapping="Wrap"
+                                   Text="Configuration can be written, but no selected output has Equalizer APO enabled. Open Equalizer APO's Device Selector and enable the APO on the output, then refresh." />
+                    </Border>
+
+                    <TextBlock Text="APO status by output" Style="{StaticResource SectionLabel}" Margin="0,12,0,4" />
+                    <ItemsControl ItemsSource="{Binding Devices}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="11"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
+                                        <TextBlock Text="● Enabled" FontSize="10" Foreground="{StaticResource SuccessBrush}"
+                                                   Visibility="{Binding ApoAssociated, Converter={StaticResource BoolToVis}}" />
+                                        <TextBlock Text="○ Not enabled" FontSize="10" Foreground="{StaticResource WarningBrush}"
+                                                   Visibility="{Binding ApoAssociated, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Content="Refresh devices" Style="{StaticResource SubtleButton}"
+                                Command="{Binding RefreshDevicesCommand}" Margin="0,0,6,0" />
+                        <Button Content="Set as Windows default" Style="{StaticResource SubtleButton}"
+                                Command="{Binding SetWindowsDefaultCommand}" Margin="0,0,6,0" />
+                        <Button Content="Windows sound settings" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenSoundSettingsCommand}" />
+                    </WrapPanel>
+
+                    <Border Style="{StaticResource Divider}" Margin="0,13,0,10" />
+                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
+                               Text="Metering uses WASAPI loopback, which captures the post-mix signal. It cannot measure ASIO or WASAPI exclusive-mode streams that bypass the Windows mixer." />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Application behaviour" Style="{StaticResource H3}" />
+                    <TextBlock Text="Tray and startup preferences." Style="{StaticResource Caption}"
+                               Margin="0,3,0,10" />
+
+                    <Grid Margin="0,2,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Start with Windows" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Launch when you sign in." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding StartWithWindows, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+
+                    <Grid Margin="0,11,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Start minimized" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Begin in the notification area." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding StartMinimized, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+
+                    <Grid Margin="0,11,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Minimize to tray" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Hide instead of using the taskbar." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding MinimizeToTray, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+
+                    <Grid Margin="0,11,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Close to tray" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Keep processing when the window closes." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding CloseToTray, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+
+                    <Grid Margin="0,11,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Tray notifications" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Show state changes and clipping alerts." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding ShowTrayNotifications, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+
+                    <Grid Margin="0,11,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Clip warnings" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Display a warning when output reaches full scale." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding ShowClipWarnings, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Shortcuts + APO location -->
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.15*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Global shortcuts" Style="{StaticResource H3}" />
+                            <TextBlock Text="Control modules while any app is focused."
+                                       Style="{StaticResource Caption}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding HotkeysEnabled, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="14,0,0,0" />
+                    </Grid>
+
+                    <Grid Margin="0,14,0,0" IsEnabled="{Binding HotkeyFieldsEnabled}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="220" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Toggle Bass Booster" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Bypass or engage the low shelf." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <controls:HotkeyInput Grid.Column="1" Height="38"
+                                              Gesture="{Binding ToggleBassHotkey, Mode=TwoWay}"
+                                              Accent="{StaticResource AccentBrush}" />
+                    </Grid>
+
+                    <Grid Margin="0,9,0,0" IsEnabled="{Binding HotkeyFieldsEnabled}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="220" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Toggle Volume Booster" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Bypass or engage digital gain." Style="{StaticResource Caption}"
+                                       Margin="0,1,0,0" />
+                        </StackPanel>
+                        <controls:HotkeyInput Grid.Column="1" Height="38"
+                                              Gesture="{Binding ToggleVolumeHotkey, Mode=TwoWay}"
+                                              Accent="{StaticResource AccentBrush}" />
+                    </Grid>
+
+                    <Grid Margin="0,9,0,0" IsEnabled="{Binding HotkeyFieldsEnabled}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="220" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Toggle master processing" FontSize="11.5" FontWeight="SemiBold" />
+                            <TextBlock Text="Bypass the entire chain without closing the app."
+                                       Style="{StaticResource Caption}" Margin="0,1,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <controls:HotkeyInput Grid.Column="1" Height="38"
+                                              Gesture="{Binding ToggleProcessingHotkey, Mode=TwoWay}"
+                                              Accent="{StaticResource AccentBrush}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding HotkeyValidationText}"
+                               Margin="0,10,0,0" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource Caption}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasHotkeyValidationError}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding HotkeyStatus}" FontSize="10.5" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
+                            <Button Content="Reset" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding ResetHotkeysCommand}" Margin="0,0,5,0" Height="32" />
+                            <Button Content="Apply shortcuts" Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding ApplyHotkeysCommand}" Height="32" Padding="12,0" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Engine location" Style="{StaticResource H3}" />
+                    <TextBlock Text="{Binding EnginePathDescription}" Style="{StaticResource Caption}"
+                               Margin="0,3,0,0" TextWrapping="Wrap" />
+
+                    <TextBox Margin="0,12,0,0" Text="{Binding EqualizerApoPathOverride}"
+                             ToolTip="Optional: Equalizer APO installation or config folder" />
+                    <TextBlock Text="Leave empty to detect Equalizer APO from its registry entry or standard install folders."
+                               Style="{StaticResource Caption}" Margin="0,5,0,0" TextWrapping="Wrap" />
+
+                    <WrapPanel Margin="0,10,0,0">
+                        <Button Content="Browse folder" Style="{StaticResource SubtleButton}"
+                                Command="{Binding BrowseEqualizerApoFolderCommand}" Margin="0,0,6,0" />
+                        <Button Content="Use auto-detect" Style="{StaticResource SubtleButton}"
+                                Command="{Binding ClearEqualizerApoPathCommand}" />
+                    </WrapPanel>
+
+                    <Border Style="{StaticResource Divider}" Margin="0,13,0,10" />
+                    <TextBlock Text="Equalizer APO is a separate, free open-source project. Boost Studio writes a managed Include file and never replaces your own configuration."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Project page" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenEqualizerApoSiteCommand}" Margin="0,0,6,0" />
+                        <Button Content="Download" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenEqualizerApoDownloadCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Backup + about -->
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.15*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Backup &amp; diagnostics" Style="{StaticResource H3}" />
+                    <TextBlock Text="Backups contain settings, user presets and a diagnostics report."
+                               Style="{StaticResource Caption}" Margin="0,3,0,0" TextWrapping="Wrap" />
+
+                    <TextBlock Text="{Binding LastBackupText}" Style="{StaticResource Caption}"
+                               Margin="0,10,0,0" TextWrapping="Wrap" />
+
+                    <WrapPanel Margin="0,10,0,0">
+                        <Button Content="Export backup" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ExportBackupCommand}" Margin="0,0,6,7" Height="34" Padding="13,0" />
+                        <Button Content="Import backup" Style="{StaticResource SubtleButton}"
+                                Command="{Binding ImportBackupCommand}" Margin="0,0,6,7" Height="34" />
+                        <Button Content="Save diagnostics" Style="{StaticResource SubtleButton}"
+                                Command="{Binding SaveDiagnosticsCommand}" Margin="0,0,6,7" Height="34" />
+                    </WrapPanel>
+
+                    <Border Style="{StaticResource Divider}" Margin="0,11,0,10" />
+
+                    <TextBlock Text="LOCAL DATA" Style="{StaticResource SectionLabel}" />
+                    <TextBlock Text="{Binding DataFolderPath}" Style="{StaticResource MonoText}"
+                               Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"
+                               Margin="0,3,0,0" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <Button Content="Open data folder" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenDataFolderCommand}" Margin="0,0,6,0" />
+                        <Button Content="Open logs folder" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenLogsFolderCommand}" Margin="0,0,6,0" />
+                        <Button Content="Open log file" Style="{StaticResource SubtleButton}"
+                                Command="{Binding OpenLogFileCommand}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{Binding ProductText}" Style="{StaticResource H2}" />
+                    <TextBlock Text="{Binding Tagline}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                    <TextBlock Text="{Binding VersionText}" Style="{StaticResource Caption}" Margin="0,1,0,0" />
+
+                    <Border Style="{StaticResource Divider}" Margin="0,12,0,9" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="92" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="OPERATING SYSTEM" Style="{StaticResource SectionLabel}" Margin="0,2,0,7" />
+                        <TextBlock Grid.Column="1" Text="{Binding OperatingSystemText}" FontSize="10.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"
+                                   Margin="0,0,0,7" />
+                        <TextBlock Grid.Row="1" Text="ARCHITECTURE" Style="{StaticResource SectionLabel}"
+                                   Margin="0,2,0,7" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ArchitectureText}" FontSize="10.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,7" />
+                        <TextBlock Grid.Row="2" Text="RUNTIME" Style="{StaticResource SectionLabel}"
+                                   Margin="0,2,0,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RuntimeText}" FontSize="10.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                    </Grid>
+
+                    <Border Style="{StaticResource Divider}" Margin="0,12,0,9" />
+                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
+                               Text="System-wide processing is provided by Equalizer APO. Boost Studio does not install kernel drivers and does not modify Windows master volume." />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Danger zone -->
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0"
+                Background="#170F10" BorderBrush="#4A2426">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Reset Boost Studio" Style="{StaticResource H3}" Foreground="#FFC9C5" />
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Text="Restore all module settings, audio routing, shortcuts and application preferences to their defaults. User equalizer presets and backup files are kept." />
+                </StackPanel>
+                <Button Grid.Column="1" Content="Reset settings" Style="{StaticResource DangerButton}"
+                        Command="{Binding ResetDefaultsCommand}" VerticalAlignment="Center" Margin="20,0,0,0" />
+            </Grid>
+        </Border>
+    </StackPanel>
+</UserControl>

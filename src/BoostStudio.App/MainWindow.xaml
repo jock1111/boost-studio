@@ -1,0 +1,280 @@
+﻿<Window x:Class="BoostStudio.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:BoostStudio.App.Controls"
+        Title="Boost Studio"
+        Width="1420" Height="900" MinWidth="1080" MinHeight="690"
+        WindowStyle="None" ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBrush}"
+        Foreground="{StaticResource TextPrimaryBrush}"
+        Icon="/Assets/app.ico"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="12"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Border Background="{StaticResource WindowBrush}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="248" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 Sidebar
+                 ═══════════════════════════════════════════════════════ -->
+            <Border Grid.Column="0" Background="{StaticResource SidebarGradient}"
+                    BorderBrush="#16232E" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="20,24,20,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="42" Height="42" CornerRadius="13"
+                                    Background="{StaticResource CardSheenGradient}"
+                                    BorderBrush="#2A4450" BorderThickness="1">
+                                <Image Source="/Assets/app.png" Width="30" Height="30"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="BOOST STUDIO" FontFamily="{StaticResource DisplayFont}"
+                                           FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" />
+                                <TextBlock Text="System-wide sound shaping" FontSize="9.5"
+                                           Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="WORKSPACE" Style="{StaticResource SectionLabel}"
+                                   Margin="12,26,0,7" />
+
+                        <ListBox x:Name="NavigationList" Style="{StaticResource NavListBox}"
+                                 ItemsSource="{Binding NavigationItems}"
+                                 SelectedItem="{Binding SelectedNavigation, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border x:Name="NavIcon" Width="30" Height="30" CornerRadius="8"
+                                                Background="#101D26" BorderBrush="#1B2C38" BorderThickness="1">
+                                            <TextBlock x:Name="NavGlyph" Text="{Binding Glyph}"
+                                                       FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" FontSize="12.5" FontWeight="SemiBold"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                            <TextBlock Text="{Binding Subtitle}" FontSize="9.5" Margin="0,1,0,0"
+                                                       Opacity="0.58" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                                     Value="True">
+                                            <Setter TargetName="NavGlyph" Property="Foreground"
+                                                    Value="{StaticResource AccentBrush}" />
+                                            <Setter TargetName="NavIcon" Property="BorderBrush" Value="#2D5A55" />
+                                            <Setter TargetName="NavIcon" Property="Background" Value="#102A29" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <!-- Sidebar footer: quick switches and engine state -->
+                    <StackPanel Grid.Row="2" Margin="20,0,20,18">
+                        <Border Style="{StaticResource Divider}" Margin="0,0,0,14" />
+
+                        <TextBlock Text="QUICK CONTROL" Style="{StaticResource SectionLabel}" Margin="2,0,0,4" />
+
+                        <Grid Margin="2,5,2,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource VioletBrush}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="Bass Booster" FontSize="11.5"
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="9,0,0,0"
+                                       VerticalAlignment="Center" />
+                            <CheckBox Grid.Column="2" Style="{StaticResource ToggleSwitch}"
+                                      IsChecked="{Binding Bass.Enabled, Mode=TwoWay}"
+                                      ToolTip="Enable or bypass Bass Booster" />
+                        </Grid>
+
+                        <Grid Margin="2,7,2,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource BlueBrush}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="Volume Booster" FontSize="11.5"
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="9,0,0,0"
+                                       VerticalAlignment="Center" />
+                            <CheckBox Grid.Column="2" Style="{StaticResource ToggleSwitch}"
+                                      IsChecked="{Binding Volume.Enabled, Mode=TwoWay}"
+                                      ToolTip="Enable or bypass Volume Booster" />
+                        </Grid>
+
+                        <Grid Margin="2,7,2,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource AccentBrush}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="Equalizer" FontSize="11.5"
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="9,0,0,0"
+                                       VerticalAlignment="Center" />
+                            <CheckBox Grid.Column="2" Style="{StaticResource ToggleSwitch}"
+                                      IsChecked="{Binding Equalizer.Enabled, Mode=TwoWay}"
+                                      ToolTip="Enable or bypass the ten-band equalizer" />
+                        </Grid>
+
+                        <Border Style="{StaticResource InnerCard}" Margin="0,16,0,0" Padding="12,10">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="6" Height="6" Fill="{Binding Engine.StateBrush}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Engine.StateLabel}" FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{Binding Engine.StateBrush}" Margin="7,0,0,0" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Engine.Summary}" FontSize="9.5" Margin="0,4,0,0"
+                                           Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"
+                                           MaxHeight="30" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="{Binding VersionText}" Style="{StaticResource Caption}"
+                                   Margin="2,12,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 Main area
+                 ═══════════════════════════════════════════════════════ -->
+            <Grid Grid.Column="1">
+                <Ellipse Width="640" Height="460" Fill="{StaticResource VioletGlowBrush}"
+                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-260,-180,0"
+                         IsHitTestVisible="False" Opacity="0.8" />
+                <Ellipse Width="520" Height="380" Fill="{StaticResource HeroGlowBrush}"
+                         HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-200,0,0,-220"
+                         IsHitTestVisible="False" Opacity="0.7" />
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="66" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="31" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Title bar -->
+                    <Border Grid.Row="0" Background="#0A1017" BorderBrush="#17242E"
+                            BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                        <Grid Margin="28,0,10,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CurrentPageTitle}"
+                                           FontFamily="{StaticResource DisplayFont}" FontSize="18"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding CurrentPageSubtitle}" Style="{StaticResource Caption}"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Style="{StaticResource StatusPill}" Margin="0,0,15,0"
+                                        ToolTip="{Binding Engine.Summary}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="7" Height="7" Fill="{Binding Engine.StateBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,7,0" />
+                                        <TextBlock Text="{Binding Engine.StateLabel}" FontSize="10.5"
+                                                   FontWeight="SemiBold" Foreground="{Binding Engine.StateBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,14,0"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="MASTER" Style="{StaticResource SectionLabel}"
+                                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}"
+                                              IsChecked="{Binding ProcessingEnabled, Mode=TwoWay}"
+                                              ToolTip="{Binding MasterDescription}" />
+                                </StackPanel>
+
+                                <Border Width="1" Height="22" Background="#1B2A35" Margin="2,0,8,0" />
+
+                                <Button Style="{StaticResource WindowButton}" Content="&#xE921;"
+                                        Click="Minimize_Click" ToolTip="Minimize" />
+                                <Button x:Name="MaximizeButton" Style="{StaticResource WindowButton}"
+                                        Content="&#xE922;" Click="Maximize_Click" ToolTip="Maximize" />
+                                <Button Style="{StaticResource WindowCloseButton}" Content="&#xE8BB;"
+                                        Click="Close_Click" ToolTip="Close" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Page host -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="30,24,24,28" Focusable="False">
+                        <controls:AnimatedContentControl Content="{Binding CurrentPage}" />
+                    </ScrollViewer>
+
+                    <!-- Status strip -->
+                    <Border Grid.Row="2" Background="#090F14" BorderBrush="#14212A"
+                            BorderThickness="0,1,0,0">
+                        <Grid Margin="28,0,24,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="5" Height="5" Fill="{Binding Engine.StateBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,7,0" />
+                                <TextBlock Text="{Binding Monitor.StatusText}" FontSize="10"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Monitor.DeviceName}" FontSize="10"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="280" />
+                                <Border Style="{StaticResource TinyDivider}" Height="12" Margin="10,0" />
+                                <TextBlock Text="{Binding VersionText}" FontSize="10"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

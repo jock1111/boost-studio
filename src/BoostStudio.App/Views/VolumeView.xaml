@@ -1,0 +1,327 @@
+<UserControl x:Class="BoostStudio.App.Views.VolumeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:BoostStudio.App.Controls"
+             xmlns:vm="clr-namespace:BoostStudio.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:VolumeBoosterViewModel}"
+             d:DesignWidth="1100"
+             Foreground="{StaticResource TextPrimaryBrush}">
+    <StackPanel>
+
+        <!-- Module header -->
+        <Border CornerRadius="18" BorderBrush="#234655" BorderThickness="1" Padding="26,22">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#122837" Offset="0" />
+                    <GradientStop Color="#0F1B27" Offset="0.55" />
+                    <GradientStop Color="#0D151D" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="230" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource IconBadge}" Width="54" Height="54" CornerRadius="15"
+                        Background="#102B3A" BorderBrush="#27536A">
+                    <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="23"
+                               Foreground="{StaticResource BlueBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="16,0,25,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Volume Booster" Style="{StaticResource H2}" />
+                        <Border Style="{StaticResource StatusPill}" Margin="11,0,0,0" Padding="9,3"
+                                Background="#102331" BorderBrush="#285066">
+                            <TextBlock Text="{Binding ActiveLabel}" FontSize="9" FontWeight="SemiBold"
+                                       Foreground="#A8E2FF" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource Secondary}"
+                               Margin="0,6,0,0" TextWrapping="Wrap" MaxWidth="620" />
+                </StackPanel>
+
+                <Border Grid.Column="2" Style="{StaticResource InnerCard}" Background="#0B1620"
+                        BorderBrush="#234455" Padding="16,13">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="DIGITAL BOOST" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding BoostText}" FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="25" FontWeight="SemiBold" Foreground="#A8E2FF"
+                                       Margin="0,4,0,0" />
+                            <TextBlock Text="{Binding GainRangeText}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding Enabled, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="14,0,0,0"
+                                  ToolTip="Enable or bypass Volume Booster" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Tuning + protection -->
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.62*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Boost, trim &amp; loudness" Style="{StaticResource H3}" />
+                            <TextBlock Text="Boost is a clean digital gain stage. Loudness is an optional contour and is off by default."
+                                       Style="{StaticResource Caption}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Style="{StaticResource StatusPill}" Padding="9,4">
+                            <TextBlock Text="{Binding BoostDescription}" FontSize="9.5"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                        </Border>
+                    </Grid>
+
+                    <Border Style="{StaticResource InnerCard}" Padding="12,8" Margin="0,14,0,0"
+                            Background="#0A121A" BorderBrush="#223A4B">
+                        <controls:ResponseCurve Height="126"
+                                                Values="{Binding LoudnessResponse}"
+                                                MinFrequency="20" MaxFrequency="20000"
+                                                MinDb="-12" MaxDb="12"
+                                                Accent="{StaticResource BlueBrush}" />
+                    </Border>
+
+                    <UniformGrid Columns="4" Margin="0,17,0,0">
+                        <StackPanel Margin="4,0">
+                            <controls:Knob Height="146" Value="{Binding BoostPercent, Mode=TwoWay}"
+                                           Minimum="0" Maximum="100" Step="1"
+                                           ResetValue="30" Title="Boost" Suffix="%"
+                                           Accent="{StaticResource BlueBrush}"
+                                           IsActive="{Binding Enabled}"
+                                           ToolTip="Percentage of the gain ceiling applied as boost" />
+                            <TextBlock Text="0 – 100%" Style="{StaticResource Caption}"
+                                       HorizontalAlignment="Center" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="4,0">
+                            <controls:Knob Height="146" Value="{Binding CeilingDb, Mode=TwoWay}"
+                                           Minimum="3" Maximum="24" Step="0.5"
+                                           ResetValue="12" Title="Ceiling" Suffix=" dB" ValueFormat="0.0"
+                                           Accent="{StaticResource BlueBrush}"
+                                           IsActive="{Binding Enabled}"
+                                           ToolTip="Maximum digital gain available at 100% boost" />
+                            <TextBlock Text="3 – 24 dB" Style="{StaticResource Caption}"
+                                       HorizontalAlignment="Center" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="4,0">
+                            <controls:Knob Height="146" Value="{Binding PreampDb, Mode=TwoWay}"
+                                           Minimum="-12" Maximum="12" Step="0.5"
+                                           ResetValue="0" Title="Trim" Suffix=" dB" ValueFormat="+0.0;-0.0;0.0"
+                                           Accent="{StaticResource BlueBrush}"
+                                           IsActive="{Binding Enabled}"
+                                           ToolTip="Manual preamp adjustment in dB" />
+                            <TextBlock Text="−12 – +12 dB" Style="{StaticResource Caption}"
+                                       HorizontalAlignment="Center" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="4,0">
+                            <controls:Knob Height="146" Value="{Binding Loudness, Mode=TwoWay}"
+                                           Minimum="0" Maximum="100" Step="1"
+                                           ResetValue="0" Title="Loudness" Suffix="%"
+                                           Accent="{StaticResource BlueBrush}"
+                                           IsActive="{Binding Enabled}"
+                                           ToolTip="Optional static loudness contour. Off by default." />
+                            <TextBlock Text="{Binding LoudnessText}" Style="{StaticResource Caption}"
+                                       HorizontalAlignment="Center" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Output protection" Style="{StaticResource H3}" />
+                    <TextBlock Text="Every gain stage, headroom reservation and AGC correction is visible here."
+                               Style="{StaticResource Caption}" Margin="0,3,0,0" TextWrapping="Wrap" />
+
+                    <Border Style="{StaticResource InnerCard}" Margin="0,13,0,0" Padding="15,12"
+                            Background="#0B131B" BorderBrush="#243545">
+                        <StackPanel>
+                            <TextBlock Text="NET GAIN (PREAMP)" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding NetGainText}" FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="25" FontWeight="SemiBold" Foreground="#C7ECFF"
+                                       Margin="0,3,0,0" />
+                            <TextBlock Text="{Binding HeadroomAppliedText}" Style="{StaticResource Caption}"
+                                       TextWrapping="Wrap" Margin="0,3,0,0" />
+                            <TextBlock Text="{Binding SignalPathText}" Style="{StaticResource Caption}"
+                                       TextWrapping="Wrap" Margin="0,5,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="HEADROOM" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding HeadroomDb, StringFormat={}{0:0.0} dB}"
+                                       FontSize="12" FontWeight="SemiBold" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="AGC TRIM" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding RuntimeTrimDb, StringFormat={}{0:+0.0;-0.0;0.0} dB}"
+                                       FontSize="12" FontWeight="SemiBold" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Style="{StaticResource Divider}" Margin="0,13,0,12" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Peak automatic gain" FontSize="12" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding AgcStatus}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding AutoGainControl, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0"
+                                  ToolTip="Slowly reduce gain when the measured output runs hot" />
+                    </Grid>
+                    <TextBlock Text="{Binding AgcDescription}" Style="{StaticResource Caption}"
+                               TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <Button Content="Reset AGC trim" Style="{StaticResource SubtleButton}"
+                            Command="{Binding ResetAgcCommand}" HorizontalAlignment="Left"
+                            Margin="0,10,0,0" />
+
+                    <Border Background="#2B2314" BorderBrush="#5E4A24" BorderThickness="1"
+                            CornerRadius="9" Padding="10,8" Margin="0,13,0,0">
+                        <TextBlock Style="{StaticResource Caption}" Foreground="#E9D49F" TextWrapping="Wrap"
+                                   Text="No sample-accurate limiter is included. Auto headroom and the slow peak AGC reduce clipping risk, but they do not guarantee a hard ceiling." />
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Live metering -->
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0" Padding="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.7*" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Measured output" Style="{StaticResource H3}" />
+                            <TextBlock Text="{Binding Monitor.DeviceName}" Style="{StaticResource Caption}"
+                                       Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Style="{StaticResource StatusPill}" Padding="9,4">
+                            <TextBlock Text="{Binding Monitor.FormatSummary}" FontSize="9"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                        </Border>
+                    </Grid>
+
+                    <controls:SpectrumDisplay Height="118" Margin="0,12,0,0"
+                                              Values="{Binding Monitor.Levels}"
+                                              Active="{Binding Monitor.IsActive}"
+                                              HighlightBass="True" />
+
+                    <controls:LevelMeter Height="10" Margin="0,12,0,0"
+                                         PeakDb="{Binding Monitor.PeakDb}"
+                                         RmsDb="{Binding Monitor.RmsDb}"
+                                         PeakHoldDb="{Binding Monitor.PeakHoldDb}"
+                                         Clipping="{Binding Monitor.IsClipping}" />
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="PEAK" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding Monitor.PeakText}" FontSize="12" FontWeight="SemiBold"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="RMS" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding Monitor.RmsText}" FontSize="12" FontWeight="SemiBold"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="PEAK HOLD" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding Monitor.PeakHoldText}" FontSize="12" FontWeight="SemiBold"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="CLIPPED SAMPLES" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{Binding Monitor.ClippingSamplesText}" FontSize="12"
+                                       FontWeight="SemiBold" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Background="#2B181A" BorderBrush="#6B2C2E" BorderThickness="1"
+                            CornerRadius="9" Padding="10,7" Margin="0,12,0,0"
+                            Visibility="{Binding Monitor.ClipWarning, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                       Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="The measured output is clipping. Lower boost, trim or loudness."
+                                       FontSize="11" Foreground="#FFC7C3" Margin="8,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <Border Grid.Column="2" Style="{StaticResource InnerCard}" Padding="16"
+                        Background="#0B141C" BorderBrush="#22333F">
+                    <StackPanel>
+                        <TextBlock Text="Test the gain stage" Style="{StaticResource H3}" />
+                        <TextBlock Text="{Binding TestTone.StatusText}" Style="{StaticResource Caption}"
+                                   Margin="0,3,0,0" TextWrapping="Wrap" />
+                        <Button Content="{Binding TestTone.PlayButtonText}" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding TestTone.PlayLevelCommand}" HorizontalAlignment="Left"
+                                Margin="0,12,0,0" Height="34"
+                                ToolTip="Play a 1 kHz reference tone through Windows shared-mode output" />
+                        <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                            <Button Content="Bass tone" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding TestTone.PlayBassCommand}" Margin="0,0,5,0" />
+                            <Button Content="Sweep" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding TestTone.PlaySweepCommand}" Margin="0,0,5,0" />
+                            <Button Content="Stop" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding TestTone.StopCommand}" />
+                        </StackPanel>
+                        <Border Style="{StaticResource Divider}" Margin="0,12,0,9" />
+                        <TextBlock Text="The 1 kHz tone is a useful reference: if the peak meter rises while the tone plays, the gain chain is active. Use the AGC reset if a previous track left a large trim in place."
+                                   Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </StackPanel>
+</UserControl>

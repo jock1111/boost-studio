@@ -1,0 +1,38 @@
+﻿<Application x:Class="BoostStudio.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="clr-namespace:BoostStudio.App.Infrastructure"
+             xmlns:vm="clr-namespace:BoostStudio.App.ViewModels"
+             xmlns:views="clr-namespace:BoostStudio.App.Views"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/Theme.xaml" />
+                <ResourceDictionary Source="Styles/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <infra:BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <infra:InverseBooleanConverter x:Key="InverseBool" />
+            <infra:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVis" />
+            <infra:NullToVisibilityConverter x:Key="NullToVis" />
+            <infra:BooleanToOpacityConverter x:Key="BoolToOpacity" />
+
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:BassBoosterViewModel}">
+                <views:BassView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:VolumeBoosterViewModel}">
+                <views:VolumeView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:EqualizerViewModel}">
+                <views:EqualizerView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <views:SettingsView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,80 @@
+<Window x:Class="BoostStudio.App.Views.Dialogs.MessageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Boost Studio"
+        Width="500" SizeToContent="Height" MaxHeight="760"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False" UseLayoutRounding="True"
+        Foreground="{StaticResource TextPrimaryBrush}">
+    <Grid Margin="24">
+        <Border CornerRadius="18" Background="{StaticResource CardGradient}"
+                BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1"
+                Effect="{StaticResource DialogShadow}" ClipToBounds="True">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Height="3" CornerRadius="18,18,0,0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#00FFFFFF" Offset="0" />
+                            <GradientStop x:Name="AccentStop" Color="#35E0C3" Offset="0.45" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+
+                <Grid Grid.Row="1" Margin="24,20,18,0"
+                      MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="IconBorder" Width="42" Height="42" CornerRadius="12"
+                            Background="#142630" BorderBrush="#29404E" BorderThickness="1">
+                        <TextBlock x:Name="IconGlyph" Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{StaticResource AccentBrush}" />
+                    </Border>
+                    <TextBlock x:Name="TitleText" Grid.Column="1" Text="Message"
+                               FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="SemiBold"
+                               Margin="13,0,16,0" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8BB;"
+                            Width="32" Height="32" Click="Cancel_Click" ToolTip="Close" />
+                </Grid>
+
+                <StackPanel Grid.Row="2" Margin="24,18,24,0">
+                    <TextBlock x:Name="MessageText" Text="Message"
+                               Style="{StaticResource Secondary}" FontSize="12.5"
+                               TextWrapping="Wrap" LineHeight="19" />
+                    <Border x:Name="DetailBorder" Style="{StaticResource InnerCard}" Margin="0,13,0,0"
+                            Padding="12,10" Visibility="Collapsed">
+                        <TextBlock x:Name="DetailText" Style="{StaticResource MonoText}"
+                                   Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"
+                                   MaxHeight="220" />
+                    </Border>
+                </StackPanel>
+
+                <Grid Grid.Row="3" Margin="24,20,24,20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource Divider}" Margin="0,0,0,14" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="CancelButton" Content="Cancel" Style="{StaticResource SecondaryButton}"
+                                Click="Cancel_Click" MinWidth="92" Margin="0,0,8,0" />
+                        <Button x:Name="ConfirmButton" Content="OK" Style="{StaticResource PrimaryButton}"
+                                Click="Confirm_Click" MinWidth="104" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

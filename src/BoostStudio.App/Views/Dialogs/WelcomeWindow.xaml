@@ -1,0 +1,183 @@
+<Window x:Class="BoostStudio.App.Views.Dialogs.WelcomeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Welcome to Boost Studio"
+        Width="660" SizeToContent="Height" MaxHeight="860"
+        Icon="/Assets/app.ico"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False" UseLayoutRounding="True"
+        Foreground="{StaticResource TextPrimaryBrush}">
+    <Grid Margin="24">
+        <Border CornerRadius="20" Background="{StaticResource CardGradient}"
+                BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1"
+                Effect="{StaticResource DialogShadow}" ClipToBounds="True">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Height="3" CornerRadius="20,20,0,0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#008B5CF6" Offset="0" />
+                            <GradientStop Color="#35E0C3" Offset="0.38" />
+                            <GradientStop Color="#8B5CF6" Offset="0.72" />
+                            <GradientStop Color="#008B5CF6" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+
+                <Grid Grid.Row="1" Margin="26,18,18,0"
+                      MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Image Source="/Assets/app.png" Width="38" Height="38"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <StackPanel Grid.Column="1" Margin="12,0,16,0" VerticalAlignment="Center">
+                        <TextBlock Text="BOOST STUDIO" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource AccentBrush}" />
+                        <TextBlock Text="System-wide sound, upgraded" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8BB;"
+                            Width="32" Height="32" Click="Later_Click" ToolTip="Close" />
+                </Grid>
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="700">
+                    <StackPanel Margin="28,24,28,0">
+                        <Border CornerRadius="16" Padding="24,22" Background="{StaticResource HeroGradient}"
+                                BorderBrush="#233846" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Make Windows sound bigger."
+                                               FontFamily="{StaticResource DisplayFont}" FontSize="27"
+                                               FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Text="Boost Studio adds real, system-wide bass, volume and equalizer processing. It uses Equalizer APO — the trusted open-source audio engine for Windows — so every app benefits, not just one player."
+                                               Style="{StaticResource Secondary}" FontSize="12.5" LineHeight="19"
+                                               TextWrapping="Wrap" Margin="0,10,22,0" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Width="62" Height="62" CornerRadius="18"
+                                        Background="#1535E0C3" BorderBrush="#4A35E0C3" BorderThickness="1"
+                                        VerticalAlignment="Top">
+                                    <TextBlock Text="&#xE9E9;" FontFamily="Segoe MDL2 Assets" FontSize="27"
+                                               Foreground="{StaticResource AccentBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource InnerCard}" Margin="0,16,0,0" Padding="16,14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Ellipse x:Name="StatusDot" Width="9" Height="9" Fill="{StaticResource WarningBrush}"
+                                         VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Margin="12,0,12,0">
+                                    <TextBlock x:Name="StatusTitle" Text="Equalizer APO is not installed"
+                                               FontSize="12.5" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="StatusDetail" Style="{StaticResource Secondary}"
+                                               FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                </StackPanel>
+                                <Border Grid.Column="2" CornerRadius="7" Padding="9,5" Background="#1AF5C95D"
+                                        VerticalAlignment="Center">
+                                    <TextBlock x:Name="StatusBadge" Text="SETUP NEEDED" FontSize="9.5"
+                                               FontWeight="Bold" Foreground="{StaticResource WarningBrush}" />
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="Setup takes about two minutes" FontSize="12.5" FontWeight="SemiBold"
+                                   Margin="2,22,0,12" />
+                        <Grid Margin="2,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Border Width="26" Height="26" CornerRadius="9" Background="#1D35E0C3"
+                                    BorderBrush="#4A35E0C3" BorderThickness="1" VerticalAlignment="Top">
+                                <TextBlock Text="1" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="0,3,0,16">
+                                <TextBlock Text="Download and run the Equalizer APO installer" FontWeight="SemiBold"
+                                           FontSize="12.5" />
+                                <TextBlock Text="Accept the defaults. When asked which devices to process, select your speakers or headphones."
+                                           Style="{StaticResource Secondary}" FontSize="11.5" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <Border Grid.Row="1" Width="26" Height="26" CornerRadius="9" Background="#1D35E0C3"
+                                    BorderBrush="#4A35E0C3" BorderThickness="1" VerticalAlignment="Top">
+                                <TextBlock Text="2" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,3,0,16">
+                                <TextBlock Text="Enable the APO for your output device" FontWeight="SemiBold"
+                                           FontSize="12.5" />
+                                <TextBlock Text="Open the Equalizer APO Configurator, tick your playback device, apply, then reboot Windows so the audio service loads it."
+                                           Style="{StaticResource Secondary}" FontSize="11.5" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <Border Grid.Row="2" Width="26" Height="26" CornerRadius="9" Background="#1D35E0C3"
+                                    BorderBrush="#4A35E0C3" BorderThickness="1" VerticalAlignment="Top">
+                                <TextBlock Text="3" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,3,0,0">
+                                <TextBlock Text="Come back and press Recheck" FontWeight="SemiBold" FontSize="12.5" />
+                                <TextBlock Text="Boost Studio will detect the engine and connect automatically when you enable a module. Your existing APO configuration is preserved and backed up before any change."
+                                           Style="{StaticResource Secondary}" FontSize="11.5" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Style="{StaticResource InnerCard}" Margin="0,20,0,0" Padding="13,11"
+                                Background="#12F5C95D" BorderBrush="#33F5C95D">
+                            <TextBlock Style="{StaticResource Secondary}" FontSize="11" TextWrapping="Wrap"
+                                       Text="Boost Studio will not install Equalizer APO for you and never bundles third-party binaries. Download it from its official SourceForge project page." />
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Grid Grid.Row="3" Margin="28,22,28,22">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource Divider}" Margin="0,0,0,16" />
+                    <Grid Grid.Row="1">
+                        <Button Content="I'll do this later" Style="{StaticResource GhostButton}"
+                                HorizontalAlignment="Left" Click="Later_Click" MinWidth="116" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Recheck" Style="{StaticResource SecondaryButton}"
+                                    Click="Recheck_Click" MinWidth="96" Margin="0,0,8,0" />
+                            <Button Content="Download Equalizer APO" Style="{StaticResource PrimaryButton}"
+                                    Click="Download_Click" MinWidth="176" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
