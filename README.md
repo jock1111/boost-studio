@@ -8,6 +8,14 @@ Volume Booster and the 10-band Equalizer can be enabled independently, so a
 volume-only setup does not change the tonal balance unless you choose to add the
 optional loudness contour.
 
+## Screenshots
+
+![Dashboard](docs/screenshots/dashboard.png)
+![Bass Booster](docs/screenshots/bass.png)
+![Volume Booster](docs/screenshots/volume.png)
+![Equalizer](docs/screenshots/equalizer.png)
+![Profiles](docs/screenshots/profiles.png)
+
 ## Features
 
 - **Bass Booster** — Low-shelf filter with adjustable intensity (0–100%), corner
