@@ -11,6 +11,8 @@ public static class AppPaths
 
     public static string UserPresetsFile => Path.Combine(Root, "presets.json");
 
+    public static string ProfilesFile => Path.Combine(Root, "profiles.json");
+
     public static string LogsDirectory => Path.Combine(Root, "logs");
 
     public static string LogFile => Path.Combine(LogsDirectory, "booststudio.log");
@@ -41,7 +43,8 @@ public sealed record AudioDeviceInfo(
     int Channels,
     string State,
     string ScopePattern,
-    bool ApoAssociated = false)
+    bool ApoAssociated = false,
+    bool IsBluetooth = false)
 {
     public string DisplayName => IsDefault ? $"{Name}  •  Windows default" : Name;
 
@@ -53,9 +56,15 @@ public sealed record AudioDeviceInfo(
     /// True only when Equalizer APO's APO CLSID is registered on this endpoint.
     /// This proves the APO is associated with the device, not that audio was measured.
     /// </summary>
-    public string ApoStatusText => ApoAssociated
-        ? "Equalizer APO enabled"
-        : "Equalizer APO not enabled";
+    public string ApoStatusText => IsBluetooth
+        ? (ApoAssociated ? "Bluetooth · APO enabled" : "Bluetooth · APO not enabled")
+        : ApoAssociated
+            ? "Equalizer APO enabled"
+            : "Equalizer APO not enabled";
+
+    public bool ShowApoEnabled => ApoAssociated && !IsBluetooth;
+    public bool ShowApoNotEnabled => !ApoAssociated && !IsBluetooth;
+    public bool ShowBluetoothNotice => IsBluetooth;
 }
 
 public enum EngineState
@@ -89,7 +98,12 @@ public sealed record EngineStatus(
     bool ApoStatusChecked = false,
     bool TargetApoEnabled = false,
     string? ProcessingScope = null,
-    string? VerificationText = null)
+    string? VerificationText = null,
+    bool ProcessingVerified = false,
+    DateTime? LastVerifiedUtc = null,
+    double? MeasuredPreampDeltaDb = null,
+    string? SuggestedApoDeviceName = null,
+    string? SuggestedApoDeviceId = null)
 {
     public static EngineStatus Detecting { get; } = new(
         EngineState.Detecting, false, null, null, null, false, false, false,
@@ -104,7 +118,7 @@ public sealed record EngineStatus(
     {
         EngineState.NotInstalled => "Engine missing",
         EngineState.NotIntegrated => "Ready to connect",
-        EngineState.Ready => "Configured",
+        EngineState.Ready => ProcessingVerified ? "Processing verified" : "Configured — unverified",
         EngineState.Bypassed => "Bypassed",
         EngineState.PermissionDenied => "Permission required",
         EngineState.ApoNotEnabled => "APO not enabled",

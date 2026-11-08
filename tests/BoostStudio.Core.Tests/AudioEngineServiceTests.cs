@@ -225,7 +225,8 @@ public sealed class AudioEngineServiceTests
         Assert.True(result.Status.TargetApoEnabled);
         Assert.True(result.Status.ApoStatusChecked);
         Assert.Equal(1, result.Status.ApoEnabledDeviceCount);
-        Assert.Contains("not measured", result.Status.VerificationText!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not been measured", result.Status.VerificationText!, StringComparison.OrdinalIgnoreCase);
+        Assert.False(result.Status.ProcessingVerified);
         Assert.DoesNotContain("fully operational", result.Status.VerificationText!, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -77,6 +77,32 @@ User presets:
 - **Rename** — Changes the name of a user preset.
 - **Delete** — Removes a user preset.
 
+## Sound Profiles
+
+Profiles are named, complete sound setups: master switch, auto headroom, Bass
+Booster, Volume Booster and the full Equalizer curve. They do not include your
+output device, monitoring device, hotkeys, startup options or other application
+preferences.
+
+- **Save current setup** captures the live processing state. If the name already
+  exists, you can replace that profile.
+- **Apply selected profile** writes the profile into the live engine through
+  Equalizer APO. Your current monitoring and output routing stay unchanged.
+- **Update from current setup** replaces the selected profile with the live
+  settings.
+- **Rename** and **Delete** manage saved profiles. Deleting a profile does not
+  change the live audio settings.
+- **Undo last profile change** restores the setup that was live before the most
+  recent apply. Undo is available for the current app session.
+- **Applied** marks the active profile. **Applied · modified** appears after a
+  live control is changed, so you can see that the saved profile no longer
+  matches exactly.
+- The tray menu's **Profiles** submenu switches profiles without opening the
+  window.
+
+Profiles are stored locally in `%LOCALAPPDATA%\BoostStudio\profiles.json` with an
+automatic `.bak` recovery copy. Up to 50 profiles are supported.
+
 ## Outputs and Processing Scope
 
 Settings separates **monitoring** from **processing**:
@@ -90,9 +116,15 @@ Settings separates **monitoring** from **processing**:
     Windows default device is not changed.
 
 Under **APO status by output**, each active output is marked **Enabled** or
-**Not enabled**. If no selected output has the APO enabled, Boost Studio can
-still write the configuration but will state that audible processing is not
-verified.
+**Not enabled**. If the current Windows default output is not APO-enabled but
+another active output is, the dashboard shows that output's name and offers
+**Use that output**. Boost Studio asks for confirmation before changing the
+Windows default; it never switches audio routing silently.
+
+If no active output has the APO enabled, Boost Studio can still write the
+configuration but will state that audible processing is not verified. Open
+Equalizer APO's Device Selector, enable the APO on the output, reboot, then use
+**Recheck**.
 
 ## Permissions
 
@@ -124,10 +156,15 @@ association, and configuration paths.
   **Connect** or enable a module.
 - **DSP configuration written and APO attached** — The configuration was written
   and the APO is registered on the target output. This still does not measure
-  audible output.
-- **Configuration written, APO not enabled** — The config file exists, but no
-  target output has the EAPO APO registered. Open Equalizer APO's Device
-  Selector, enable the output, reboot, then recheck.
+  audible output; the state says **Configured — unverified** until the measured
+  self-test passes.
+- **Processing verified** — The measured loopback self-test passed on this
+  session/output. The preceding −18 dB preamp step, Volume and Bass checks all
+  matched their expected values.
+- **Configuration written, APO not enabled** — The config file exists, but the
+  current target output has no EAPO APO registered. If another output has the
+  APO, use **Use that output** on the dashboard or Settings. Otherwise open
+  Equalizer APO's Device Selector, enable the output, reboot, then recheck.
 - **Bypassed** — Integration exists but master processing is off.
 - **Permission Required** — The config files are not writable. Use **Grant
   access once**, or restart elevated for this session.
@@ -139,15 +176,25 @@ that processing is fully operational.
 
 ## Tray and Hotkeys
 
-- **Tray Icon** — Shows Boost Studio in the system tray. Right-click for quick toggles (master, bass, volume, EQ) or open/close the app.
+- **Tray Icon** — Shows Boost Studio in the system tray. Right-click for quick toggles (master, bass, volume, EQ), saved-profile switching, or open/close the app.
 - **Minimize to Tray** — When enabled, minimizing the main window hides to the tray instead of the taskbar.
 - **Close to Tray** — When enabled, closing the window hides to the tray instead of exiting.
 - **Hotkeys** — Global shortcuts (default: Ctrl+Alt+B for Bass, Ctrl+Alt+V for Volume, Ctrl+Alt+M for Master). Customize in Settings.
+- **In-app shortcuts** — `Ctrl+1` Dashboard, `Ctrl+2` Bass, `Ctrl+3` Volume,
+  `Ctrl+4` Equalizer, `Ctrl+5` Profiles, `Ctrl+6` Settings, and `Ctrl+M` toggles
+  master processing while the window is focused.
+- **Window memory** — Boost Studio restores its last size, position and maximized
+  state, as long as the window is still visible on a connected display.
+- **Second launch** — Starting Boost Studio again activates and reveals the
+  running window instead of showing an "already running" message.
 
 ## Backup and Restore
 
-- **Export** — Saves settings and user EQ presets to a `.boostbackup` ZIP file.
-- **Import** — Restores settings and presets from a backup file.
+- **Export** — Saves settings, sound profiles and user EQ presets to a
+  `.boostbackup` ZIP file (format 2).
+- **Import** — Restores settings, profiles and presets from a backup file.
+  Backups created by older versions contain no profiles; importing one keeps
+  your existing profile library instead of deleting it.
 - **Restore Baseline** — Restores the Equalizer APO `config.txt` captured before
   Boost Studio first connected. The current file is backed up first. If you
   edited `config.txt` after that baseline was captured, Boost Studio warns that
@@ -166,10 +213,27 @@ whole app elevated for routine use.
 
 ### Processing seems inactive
 Check **Settings → APO status by output**. If the output is marked **Not
-enabled**, open Equalizer APO's Device Selector, enable the APO for that output,
-apply, and reboot. A written configuration alone does not prove audible
-processing. Also confirm the processing scope (all outputs or the selected
-output) matches the device you are listening on.
+enabled**, either use the dashboard's **Use that output** suggestion when
+another output is already APO-enabled, or open Equalizer APO's Device Selector,
+enable the APO for that output, apply, and reboot. A written configuration alone
+does not prove audible processing. Also confirm the processing scope (all
+outputs or the selected output) matches the device you are listening on.
+
+A common cause is switching the Windows default output to headphones or
+speakers that were never enabled in Equalizer APO. Windows allows each endpoint
+to have its own APO registration; "all APO outputs" means every output that has
+the APO enabled, not every endpoint in Windows.
+
+### Bass boost doesn't work on my Bluetooth speaker
+
+First check that a module is actually enabled — if Bass, Volume and EQ are all
+off, Boost Studio writes a bypass configuration by design. Bluetooth endpoints
+can be APO-processed (verified by loopback on this machine), but the speaker's
+own DSP/codec may mask the effect. Enable the APO for the Bluetooth output in
+Equalizer APO's Device Selector, confirm it shows **Enabled** under
+**Settings → APO status by output**, then run **Test audio engine**. If the
+measured test passes but you still hear no change, the limitation is in the
+speaker/codec, not Boost Studio. See [Limitations](LIMITATIONS.md#bluetooth-outputs-can-be-processed-with-caveats).
 
 ### Hotkeys not working
 If a hotkey conflicts with another application, you will see a warning when applying shortcuts. Choose a different combination in Settings.

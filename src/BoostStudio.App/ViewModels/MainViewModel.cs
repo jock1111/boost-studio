@@ -11,7 +11,7 @@ using BoostStudio.Core.Storage;
 
 namespace BoostStudio.App.ViewModels;
 
-public sealed record NavigationItem(string Key, string Label, string Subtitle, string Glyph);
+public sealed record NavigationItem(string Key, string Label, string Subtitle, string Glyph, string Shortcut);
 
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
@@ -21,6 +21,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly bool _startMinimizedByArgument;
     private readonly SettingsStore _settingsStore;
     private readonly PresetStore _presetStore;
+    private readonly ProfileStore _profileStore;
     private readonly BackupService _backup;
     private readonly AudioEngineService _engine;
     private readonly AudioMonitorService _monitorService;
@@ -39,6 +40,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private AppSettings _settings;
     private UserPresetLibrary _presets;
+    private ProfileLibrary _profiles;
     private NavigationItem _selectedNavigation;
     private object _currentPage;
     private bool _initialized;
@@ -62,9 +64,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         AppPaths.EnsureCreated();
         _settingsStore = new SettingsStore(log: log);
         _presetStore = new PresetStore(log: log);
+        _profileStore = new ProfileStore(log: log);
         _settings = _settingsStore.Load();
         _presets = _presetStore.Load();
-        _backup = new BackupService(_settingsStore, _presetStore, log);
+        _profiles = _profileStore.Load();
+        _backup = new BackupService(_settingsStore, _presetStore, log, _profileStore);
 
         _dialogs = new DialogService();
         _shell = new ShellService();
@@ -85,6 +89,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Equalizer = new EqualizerViewModel(_settings, _presets, _presetStore, _dialogs, OnSettingsMutated);
         Engine = new EngineStatusViewModel(_engine, _settings, _dialogs, _shell, log,
             () => _autoGain.TrimDb, RestartElevatedAndExit);
+        Profiles = new ProfilesViewModel(_settings, _profiles, _profileStore, _dialogs,
+            ReloadAllFromSettings, Navigate);
         Settings = new SettingsViewModel(
             _settings, _dialogs, log, _shell, _startup, _audioDevices, _backup, _engine, Monitor,
             OnSettingsMutated, ScheduleMonitorRestart, ApplyHotkeysNow, ReloadAllFromSettings,
@@ -93,9 +99,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _presets = library;
                 Equalizer.ReplaceLibrary(library);
             },
-            () => _presets);
+            () => _presets,
+            () => Profiles.Library,
+            library => Profiles.ReplaceLibrary(library));
 
-        Dashboard = new DashboardViewModel(Bass, Volume, Equalizer, Monitor, TestTone, Engine,
+        Dashboard = new DashboardViewModel(Bass, Volume, Equalizer, Monitor, TestTone, Engine, Profiles,
             () => _settings.ProcessingEnabled, v => SetProcessingEnabled(v), Navigate);
 
         NavigateCommand = new RelayCommand<string>(key =>
@@ -105,11 +113,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         NavigationItems = new ObservableCollection<NavigationItem>
         {
-            new("dashboard", "Dashboard", "Overview", "\uE80F"),
-            new("bass", "Bass Booster", "Low-shelf weight and impact", "\uE8D6"),
-            new("volume", "Volume Booster", "Gain, loudness and metering", "\uE767"),
-            new("equalizer", "Equalizer", "Ten ISO bands", "\uE9E9"),
-            new("settings", "Settings", "Engine, devices and app", "\uE713")
+            new("dashboard", "Dashboard", "Overview", "\uE80F", "Ctrl+1"),
+            new("bass", "Bass Booster", "Low-shelf weight and impact", "\uE8D6", "Ctrl+2"),
+            new("volume", "Volume Booster", "Gain, loudness and metering", "\uE767", "Ctrl+3"),
+            new("equalizer", "Equalizer", "Ten ISO bands", "\uE9E9", "Ctrl+4"),
+            new("profiles", "Profiles", "Saved complete setups", "\uE8F1", "Ctrl+5"),
+            new("settings", "Settings", "Engine, devices and app", "\uE713", "Ctrl+6")
         };
 
         _selectedNavigation = NavigationItems.FirstOrDefault(i => i.Key == _settings.LastPage) ?? NavigationItems[0];
@@ -127,11 +136,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             Navigate("settings");
             ShowWindowRequested?.Invoke(this, EventArgs.Empty);
         };
+        _tray.ProfilesRequested += (_, _) =>
+        {
+            Navigate("profiles");
+            ShowWindowRequested?.Invoke(this, EventArgs.Empty);
+        };
+        _tray.ProfileRequested += id =>
+        {
+            Profiles.ApplyById(id);
+            Dashboard.Refresh();
+            UpdateTrayState();
+        };
         _tray.ToggleProcessingRequested += (_, _) => ToggleProcessingFromShell();
         _tray.ToggleBassRequested += (_, _) => ToggleBassFromShell();
         _tray.ToggleVolumeRequested += (_, _) => ToggleVolumeFromShell();
         _tray.ToggleEqualizerRequested += (_, _) => ToggleEqualizerFromShell();
         _tray.ExitRequested += (_, _) => RequestExit();
+        Profiles.LibraryChanged += (_, _) => UpdateTrayProfiles();
 
         _devicePollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
         _devicePollTimer.Tick += OnDevicePollTick;
@@ -140,6 +161,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         Monitor.WarningsEnabled = _settings.Application.ShowClipWarnings;
         UpdateTrayState();
+        UpdateTrayProfiles();
         var elevated = _shell.IsElevated ? "elevated" : "standard";
         _log.Info($"Boost Studio {AppInfo.Version} started ({elevated}); settings loaded from {_settingsStore.FilePath}.");
     }
@@ -150,8 +172,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public MonitorViewModel Monitor { get; }
     public TestToneViewModel TestTone { get; }
     public EngineStatusViewModel Engine { get; }
+    public ProfilesViewModel Profiles { get; }
     public SettingsViewModel Settings { get; }
     public DashboardViewModel Dashboard { get; }
+
+    /// <summary>The live settings graph. Prefer the feature view models for edits.</summary>
+    public AppSettings SettingsData => _settings;
     public ObservableCollection<NavigationItem> NavigationItems { get; }
 
     public bool StartMinimizedRequested => _startMinimizedByArgument || _settings.Application.StartMinimized;
@@ -219,6 +245,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _devicePollTimer.Start();
             await RestartMonitorAsync();
             _lastDefaultDeviceId = _audioDevices.GetDefaultDeviceId();
+            Profiles.RefreshFromSettings();
             Dashboard.Refresh();
             UpdateTrayState();
             _autoSaver.Schedule();
@@ -297,6 +324,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         "bass" => Bass,
         "volume" => Volume,
         "equalizer" => Equalizer,
+        "profiles" => Profiles,
         "settings" => Settings,
         _ => Dashboard
     };
@@ -351,6 +379,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _autoSaver.Schedule();
         _engine.ScheduleApply(_settings, _autoGain.TrimDb);
         SyncRuntimeState();
+        Profiles.RefreshFromSettings();
         Dashboard.Refresh();
         UpdateTrayState();
     }
@@ -378,6 +407,39 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void UpdateTrayProfiles()
+    {
+        try
+        {
+            _tray.UpdateProfiles(Profiles.ProfileModels, Profiles.ActiveProfileId);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"Could not update the tray profiles: {ex.Message}");
+        }
+    }
+
+    /// <summary>Persists the window placement so the app reopens where the user left it.</summary>
+    public void SaveWindowPlacement(double left, double top, double width, double height, bool maximized)
+    {
+        if (_disposed) return;
+        var app = _settings.Application;
+        if (width >= 1080 && height >= 690)
+        {
+            app.WindowWidth = width;
+            app.WindowHeight = height;
+        }
+
+        if (double.IsFinite(left) && double.IsFinite(top))
+        {
+            app.WindowLeft = left;
+            app.WindowTop = top;
+        }
+
+        app.WindowMaximized = maximized;
+        _autoSaver.Schedule();
+    }
+
     private void ReloadAllFromSettings()
     {
         _settings.Normalize();
@@ -385,6 +447,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Volume.ReloadFromSettings();
         Equalizer.ReplaceLibrary(_presets);
         Equalizer.ReloadFromSettings();
+        Profiles.RefreshFromSettings();
         Settings.ReloadFromSettings();
         SyncRuntimeState();
         _autoSaver.Schedule();
@@ -635,6 +698,29 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void SaveSettings()
     {
+        // AutoSaver runs on a timer thread. Normalizing and serializing the live
+        // settings graph there races with UI edits, so always save from the UI thread.
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+        {
+            if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished) return;
+
+            try
+            {
+                dispatcher.Invoke(SaveSettings);
+            }
+            catch (TaskCanceledException)
+            {
+                // The app is shutting down; the final synchronous save already ran.
+            }
+            catch (Exception ex)
+            {
+                _log.Warn($"Deferred settings save could not run: {ex.Message}");
+            }
+
+            return;
+        }
+
         try
         {
             _settings.Normalize();

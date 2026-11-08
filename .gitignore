@@ -22,7 +22,6 @@ out/
 *.userosscache
 *.sln.docstates
 *.userprefs
-*.sln.docstates
 
 # .NET
 *.cache
@@ -52,11 +51,8 @@ coverage/
 # Node modules (if any)
 node_modules/
 
-# Build artifacts specific to this project
-artifacts/publish-x64/
-artifacts/*.zip
-artifacts/*.msi
-artifacts/*.wixpdb
+# AI tooling / local scratch
+.headroom/
 
 # Verification scripts (not part of source)
 check-build.bat
@@ -71,6 +67,3 @@ run-verification.ps1
 run.bat
 start-app.bat
 verify-run.ps1
-
-# Final report (not source)
-.headroom/FINAL_REPORT.md

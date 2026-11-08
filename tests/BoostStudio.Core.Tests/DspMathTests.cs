@@ -30,6 +30,39 @@ public sealed class DspMathTests
     }
 
     [Fact]
+    public void FullHeadroomKeepsEveryFrequencyBelowUnity()
+    {
+        var settings = AppSettings.CreateDefault();
+        settings.AutoHeadroom = true;
+        settings.Bass.Enabled = true;
+        settings.Bass.Intensity = 100;
+        settings.Bass.MaxGainDb = 24;
+        settings.Bass.FrequencyHz = 45;
+        settings.Bass.ShelfQ = 0.55;
+        settings.Volume.Enabled = false;
+        settings.Volume.Loudness = 0;
+        settings.Equalizer.Enabled = true;
+        settings.Equalizer.GainsDb = Enumerable.Repeat(12.0, EqConstants.BandCount).ToArray();
+        settings.Normalize();
+
+        var staticBoost = DspMath.ComputeMaxStaticBoostDb(settings);
+        var reserved = DspMath.ComputeHeadroomReservationDb(settings);
+        var filters = DspMath.BuildStaticFilters(settings);
+
+        // The reservation must cover the measured peak boost plus the safety margin;
+        // reserving only part of the boost leaves a positive net gain and can clip.
+        Assert.True(reserved >= Math.Round(staticBoost + 0.5, 1) - 0.001,
+            $"Reserved {reserved:0.0} dB for a measured {staticBoost:0.0} dB boost.");
+
+        for (var frequency = 20.0; frequency <= 20000; frequency *= 1.01)
+        {
+            var netGain = DspMath.EvaluateResponseDb(filters, frequency) - reserved;
+            Assert.True(netGain <= 0.01,
+                $"Net gain at {frequency:0} Hz is {netGain:+0.00;-0.00;0.00} dB with full headroom.");
+        }
+    }
+
+    [Fact]
     public void ZeroGainIsUnity()
     {
         var filter = DspMath.Peaking(1000, 0, 1.41, SampleRate);

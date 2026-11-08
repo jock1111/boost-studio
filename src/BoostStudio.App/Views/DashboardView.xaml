@@ -89,9 +89,20 @@
                         <TextBlock Text="{Binding Engine.Summary}" Style="{StaticResource Caption}"
                                    Margin="0,14,0,0" TextWrapping="Wrap" MaxHeight="46"
                                    TextTrimming="CharacterEllipsis" />
-                        <Button Content="Engine &amp; devices" Style="{StaticResource SecondaryButton}"
-                                Command="{Binding NavigateCommand}" CommandParameter="settings"
-                                HorizontalAlignment="Left" Margin="0,16,0,0" Height="34" />
+                        <Border Style="{StaticResource Divider}" Margin="0,12,0,10" />
+                        <TextBlock Text="SOUND PROFILE" Style="{StaticResource SectionLabel}" />
+                        <TextBlock Text="{Binding ProfileStatusText}" FontSize="11.5" FontWeight="SemiBold"
+                                   Margin="0,4,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ProfileCountText}" Style="{StaticResource Caption}"
+                                   Margin="0,2,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Content="Switch" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding NavigateCommand}" CommandParameter="profiles"
+                                    Height="32" Padding="11,0" Margin="0,0,6,0" />
+                            <Button Content="Engine &amp; devices" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding NavigateCommand}" CommandParameter="settings"
+                                    Height="32" Padding="11,0" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -218,6 +229,19 @@
                     <TextBlock Text="{Binding Engine.VerificationText}" Style="{StaticResource Caption}"
                                TextWrapping="Wrap" Margin="0,7,0,0"
                                Foreground="{StaticResource TextSecondaryBrush}" />
+
+                    <Border Background="#2B2314" BorderBrush="#5E4A24" BorderThickness="1"
+                            CornerRadius="9" Padding="10,8" Margin="0,10,0,0"
+                            Visibility="{Binding Engine.HasSuggestedApoOutput, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Engine.SuggestedApoOutputText}" Style="{StaticResource Caption}"
+                                       Foreground="#E9D49F" TextWrapping="Wrap" />
+                            <Button Content="Use that output" Style="{StaticResource SubtleButton}"
+                                    Command="{Binding Engine.UseSuggestedApoOutputCommand}"
+                                    HorizontalAlignment="Left" Height="30" Padding="11,0" Margin="0,7,0,0"
+                                    ToolTip="Make this APO-enabled output the Windows default so processing is audible" />
+                        </StackPanel>
+                    </Border>
 
                     <Border Style="{StaticResource Divider}" Margin="0,14" />
 

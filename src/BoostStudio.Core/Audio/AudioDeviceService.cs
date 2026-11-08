@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Text;
 using BoostStudio.Core.Engine;
 using BoostStudio.Core.Models;
 using BoostStudio.Core.Storage;
@@ -176,9 +178,10 @@ public sealed class AudioDeviceService
         var state = SafeRead(() => device.State.ToString(), "Unknown");
         var pattern = BuildScopePattern(deviceName, name, interfaceName);
         var apo = EqualizerApoApoDetector.Check(device.ID);
+        var isBluetooth = IsBluetoothEndpoint(device.ID);
 
         return new AudioDeviceInfo(device.ID, name, deviceName, interfaceName, isDefault,
-            sampleRate, channels, state, pattern, apo == ApoAssociation.Associated);
+            sampleRate, channels, state, pattern, apo == ApoAssociation.Associated, isBluetooth);
     }
 
     private static T SafeRead<T>(Func<T> getter, T fallback)
@@ -236,6 +239,65 @@ public sealed class AudioDeviceService
         var result = string.Join(' ', new string(chars).Split(' ', StringSplitOptions.RemoveEmptyEntries));
         return string.IsNullOrWhiteSpace(result) ? "all" : result;
     }
+
+    /// <summary>
+    /// Equalizer APO cannot process Bluetooth endpoints: Windows encodes the audio
+    /// and hands it to the Bluetooth stack after the APO stage. Detecting the bus
+    /// lets the UI say "unsupported" instead of the misleading "not enabled".
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, bool> BluetoothEndpointCache =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static bool IsBluetoothEndpoint(string? nAudioDeviceId)
+    {
+        if (string.IsNullOrWhiteSpace(nAudioDeviceId))
+            return false;
+
+        return BluetoothEndpointCache.GetOrAdd(nAudioDeviceId, DetectBluetoothEndpoint);
+    }
+
+    private static bool DetectBluetoothEndpoint(string nAudioDeviceId)
+    {
+        try
+        {
+            // NAudio IDs look like "{0.0.0.00000000}.{endpoint-guid}". The matching
+            // software device node is SWD\MMDEVAPI\{...} with an upper-case GUID.
+            var instanceId = "SWD\\MMDEVAPI\\" + nAudioDeviceId.ToUpperInvariant();
+            var parentId = GetParentDeviceInstanceId(instanceId);
+            return parentId is not null &&
+                   (parentId.StartsWith("BTHENUM\\", StringComparison.OrdinalIgnoreCase) ||
+                    parentId.StartsWith("BTHLE\\", StringComparison.OrdinalIgnoreCase) ||
+                    parentId.StartsWith("BTHUSB\\", StringComparison.OrdinalIgnoreCase) ||
+                    parentId.StartsWith("BTH\\", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string? GetParentDeviceInstanceId(string deviceInstanceId)
+    {
+        const int crSuccess = 0;
+        if (CM_Locate_DevNode(out var devInst, deviceInstanceId, 0) != crSuccess)
+            return null;
+        if (CM_Get_Parent(out var parentInst, devInst, 0) != crSuccess)
+            return null;
+
+        var buffer = new StringBuilder(512);
+        return CM_Get_Device_ID(parentInst, buffer, buffer.Capacity, 0) == crSuccess
+            ? buffer.ToString()
+            : null;
+    }
+
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CM_Locate_DevNode(out int devInst, string deviceID, int flags);
+
+    [DllImport("cfgmgr32.dll")]
+    private static extern int CM_Get_Parent(out int parentDevInst, int devInst, int flags);
+
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CM_Get_Device_ID(int devInst, StringBuilder buffer, int bufferLen, int flags);
 
     private enum ERole
     {

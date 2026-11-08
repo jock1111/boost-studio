@@ -1,7 +1,8 @@
 # Testing
 
-This document separates automated tests, real system smoke tests, and audio
-verification that is still blocked by the test machine's Equalizer APO setup.
+This document separates automated tests, real system smoke tests, and measured
+audio evidence. It also records what remains environment-dependent or requires
+human listening.
 
 ## Automated Tests
 
@@ -9,7 +10,7 @@ Latest result:
 
 ```text
 dotnet test BoostStudio.sln -c Debug
-Passed! - Failed: 0, Passed: 112, Skipped: 0, Total: 112
+Passed! - Failed: 0, Passed: 136, Skipped: 0, Total: 136
 ```
 
 The suite targets `BoostStudio.Core` and covers:
@@ -28,7 +29,11 @@ The suite targets `BoostStudio.Core` and covers:
   orphan markers, backup-failure abort, stale-baseline/conflict detection,
   concurrent user edits, corrupted managed file replacement.
 - **StorageTests** — settings round-trip and normalization, corrupt settings
-  recovery, preset normalization, backup export/import, invalid backup rejection.
+  recovery, preset normalization, backup export/import, profile backup
+  round-trip, profile-file recovery, invalid backup rejection.
+- **SoundProfileTests** — capture/apply round-trip of processing state only,
+  metadata-insensitive matching, deep-copied EQ curves, duplicate id/name
+  normalization, profile-store round-trip and `.bak` recovery.
 - **SettingsAndPresetsTests** — safe defaults, module independence, master
   override, no shared collections, schema migration (including Loudness 20 → 0
   for old settings), effective gain math, presets, hotkeys.
@@ -39,42 +44,97 @@ The suite targets `BoostStudio.Core` and covers:
   pattern generation and matching.
 - **ApoAssociationTests** — endpoint GUID extraction, known EAPO CLSID matching,
   access-grant rejection of missing folders and invalid SIDs.
+- **ApoReadinessTests** — default-output targeting, scoped targeting, missing
+  devices, and suggested APO-enabled output selection.
 
 ## Build Results
 
 - Debug build: 0 warnings, 0 errors.
-- Release publish: self-contained single-file `BoostStudio.exe`, version 1.0.0,
-  approximately 164 MiB.
-- Portable ZIP: `artifacts/BoostStudio-1.0.0-win-x64-portable.zip`.
-- MSI: `artifacts/BoostStudio-1.0.0-win-x64.msi`, built with WiX Toolset 5.0.2.
-- MSI silent install exit code 0; installed executable launched and responded.
-- MSI silent uninstall exit code 0; install folder and Start Menu shortcut were
-  removed, while `%LOCALAPPDATA%\BoostStudio\settings.json` was preserved.
+- `dotnet test BoostStudio.sln -c Debug`: 136 passed, 0 failed.
+- Release publish: self-contained single-file `artifacts\publish-x64\BoostStudio.exe`,
+  version 1.1.0 (`1.1.0+6f8c1e9d8346970c450367ec13628bb925a04c3e`),
+  171,869,753 bytes (~164 MiB), SHA-256
+  `32DC6DC8A2F1AFDE36F3DA7F5F6AB905DCA7BEB5DA37607129ECCDB3804B93CB`.
+- Portable ZIP: `artifacts\BoostStudio-1.1.0-win-x64-portable.zip`,
+  70,007,880 bytes (~66.8 MiB), SHA-256
+  `5450A7633193A2782A6438CEBFBDB9C19D803E6886BC65A11313FCDD878C23C9`.
+- MSI: `artifacts\BoostStudio-1.1.0-win-x64.msi`, 56,360,960 bytes (~53.8 MiB),
+  SHA-256 `52D48320DA5CF300A9CC59E42B4583BC8B1302ACBBC7BAC68A17D582C114A599`,
+  built with WiX Toolset 5.0.2.
+- The 1.1.0 MSI was built but not silently installed/uninstalled in this run;
+  the previous 1.0.0 MSI smoke test is recorded below for reference.
 
 ## Real System Smoke Tests
 
 These tests ran on the actual development machine with Equalizer APO 1.4.2
-installed. No audio result is inferred from these tests.
+installed.
+
+### Measured audio self-test (Boost Studio 1.1.0)
+
+`artifacts\publish-x64\BoostStudio.exe --audio-self-test` was run with the
+processing scope temporarily pinned to `Speakers (4- HyperX QuadCast S)`. It
+exited 0 and wrote
+`%LOCALAPPDATA%\BoostStudio\diagnostics\audio-self-test-20261107-214231.txt`:
+
+- Current DSP configuration with −18 dB test preamp: measured **−18.0 dB**
+  (expected −18.0 dB).
+- Volume Booster preamp: measured **+12.0 dB** (expected +12.0 dB).
+- Bass Booster low shelf at 55 Hz: measured **+8.3 dB** (expected +8.3 dB).
+- Bass Booster selectivity at 1 kHz: measured **+0.1 dB** (expected +0.1 dB).
+- Loopback device: `Speakers (4- HyperX QuadCast S)`, 48 kHz, 2 channels.
+
+The user's saved settings were restored afterward (`ApplyToAllDevices = true`).
+An earlier 1.0.0 run on the same endpoint also passed (−18.0 dB step, +6.0 dB
+volume, +8.3 dB bass) and a separate process measured +5.9 dB, confirming shared
+post-mix processing rather than a self-generated tone.
+
+### Bluetooth endpoint self-test
+
+A second run was scoped to `Headphones (Kevin speaker)`
+(`{88d9ed67-73a2-4c29-9051-dd7b090fb1ec}`, a Bluetooth A2DP endpoint that the
+user had since enabled in Equalizer APO's Device Selector). Report:
+`audio-self-test-20261107-220151.txt`. The measured steps all passed through the
+Bluetooth loopback:
+
+- −18 dB preamp step: measured **−18.0 dB**.
+- Volume preamp: measured **+12.0 dB**.
+- Bass low shelf at 75 Hz: measured **+20.6 dB** (expected +21.1 dB).
+- Bass selectivity at 1 kHz: measured **0.0 dB** (expected −0.1 dB).
+
+This proves Equalizer APO processing reaches Bluetooth endpoints on this
+machine, contradicting the older "Bluetooth is unsupported" assumption. The
+overall verdict was "not verified for current configuration" only because every
+module was disabled in the saved settings at test time (an all-off setup writes
+a bypass configuration by design). Settings were restored afterward.
+
+### Current endpoint state
+
+`Headphones (Kevin speaker)` is a Bluetooth endpoint
+(`BTHENUM\{0000110b-…}\…`, A2DP). It now has the EAPO pre-mix/post-mix CLSIDs
+registered, as do `Speakers (4- HyperX QuadCast S)`, `Digital Output` and
+`Oculus Virtual Audio Device` — the user enabled several outputs in Equalizer
+APO's Device Selector. Boost Studio 1.1.0 labels Bluetooth endpoints in
+**Settings → APO status by output** and still offers **Use that output** when
+the current default is unprocessed but another output is enabled.
+
+### Earlier smoke tests (1.0.0)
 
 - **Published EXE, standard user** — launched `artifacts/publish-x64/BoostStudio.exe`
   with `--minimized`. It loaded the real settings file, saved a schema-v2
   migration, wrote the DSP configuration, and logged that Equalizer APO was not
-  registered on any output.
+  registered on the then-default output.
 - **Real config preservation** — the real
   `C:\Program Files\EqualizerAPO\config\config.txt` retained the user's
   `Preamp`, `Include` and `GraphicEQ` lines while Boost Studio's managed block
   was added.
-- **Real APO association check** — neither Equalizer APO CLSID
-  (`{EACD2258-FCAC-4FF4-B36D-419E924A6D79}` pre-mix,
-  `{EC1CC9CE-FAED-4822-828A-82A81A6F018F}` post-mix) is present in the render
-  endpoint `FxProperties`. The UI therefore reports "configuration written, APO
-  not registered; audible processing not verified".
 - **Monitoring** — WASAPI loopback started on `Speakers (4- HyperX QuadCast S)`
   at 48 kHz, 2 channels.
 - **Hotkey conflict** — `Ctrl+Alt+M` was already registered by another
   application; Boost Studio logged the failure and kept running.
+- **MSI** — the 1.0.0 MSI silent install/uninstall smoke test passed; logs are
+  listed below. The 1.1.0 MSI was built but not installed in this run.
 
-Backups created before these tests:
+Backups and logs created before these tests:
 
 - `artifacts/eapo-config-backup-20261102-074149.txt`
 - `artifacts/eapo-booststudio-backup-20261102-074149.txt`
@@ -83,22 +143,27 @@ Backups created before these tests:
 
 ## Not Verified
 
-The following could **not** be verified in this environment:
+The following could **not** be fully verified in this environment:
 
-- **Audible DSP processing** — no render endpoint has the Equalizer APO APO
-  registered. A configuration file was written, but no controlled tone was
-  measured through the APO.
-- **Frequency-response accuracy** — requires APO-enabled output plus loopback or
-  external measurement.
-- **Clipping/headroom behavior on real content** — requires audible output and a
-  known full-scale signal.
-- **AGC response to real program material** — controller unit tests pass; no real
-  loopback test was performed.
-- **Per-device audible isolation** — scoped config syntax is tested, but no
-  second APO-enabled output was available for an audible comparison.
-- **Interactive MSI UI** — only silent install/uninstall were exercised.
-- **Windows default-device switching** — best-effort IPolicyConfig path was not
-  exercised in this run.
+- **Subjective audibility** — loopback measurement proves the DSP reaches the
+  APO-enabled endpoint, but only the listener can confirm what they hear on
+  their speakers/headphones.
+- **Frequency-response accuracy** — requires a calibrated external microphone or
+  reference measurement, not just loopback levels.
+- **Clipping/headroom behavior on real program material** — the controlled tone
+  passed; real music/game content was not measured.
+- **AGC response to real program material** — controller unit tests pass; no
+  real loopback test of the slow peak controller was performed.
+- **Per-device audible isolation** — only one output (`Speakers (4- HyperX
+  QuadCast S)`) has Equalizer APO registered, so a second APO-enabled output was
+  not available for comparison.
+- **Current default output** — `Headphones (Kevin speaker)` is not APO-enabled,
+  so processing on that endpoint is unverified by design.
+- **Interactive MSI UI** — the 1.1.0 MSI was built but not installed; only the
+  earlier 1.0.0 silent install/uninstall was exercised.
+- **Windows default-device switching** — the new **Use that output** command
+  uses the best-effort IPolicyConfig path; it was implemented and unit-covered
+  indirectly, but the live switch was not exercised in this run.
 - **Tray interaction and startup-with-Windows** — processes and persistence were
   exercised, but GUI interaction across DPI scales was not.
 
@@ -122,6 +187,8 @@ When an output has Equalizer APO enabled:
 10. Use a near-full-scale signal and confirm the reported net gain includes the
     automatic headroom subtraction. AGC is a slow controller, not a limiter.
 
-Until steps 3–10 are performed on an APO-enabled endpoint, Boost Studio's
-honest status remains **"configuration written; audible processing not
-verified."**
+The automated `--audio-self-test` loopback procedure covers the controlled-tone
+portion of this checklist on an APO-enabled endpoint. Steps that require
+listening, real program material, or external measurement still need a human.
+Until those are performed, Boost Studio's honest status for subjective
+audibility remains **"processing verified by loopback; confirm by ear."**

@@ -1,6 +1,8 @@
 using BoostStudio.Core.Dsp;
 using BoostStudio.Core.Engine;
 using BoostStudio.Core.Models;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace BoostStudio.Core.Tests;
 
@@ -77,6 +79,41 @@ public sealed class EqualizerApoConfigStoreTests
             Assert.False(Directory.Exists(store.BackupDirectory) &&
                          Directory.GetFiles(store.BackupDirectory, "eapo-config-*.txt").Length > 0);
         }
+    }
+
+    [Fact]
+    public void EnsureIntegratedRepairsAudioEngineReadAccessEvenWhenContentIsUnchanged()
+    {
+        var (store, root, configPath, _) = Create("Preamp: 0 dB\n");
+        using (root)
+        {
+            Assert.True(store.EnsureIntegrated());
+
+            // Simulate files written before the ACL fix (or moved from a temp folder):
+            // only the interactive user can read them, so audiodg cannot load the DSP.
+            MakeOwnerOnly(configPath);
+            MakeOwnerOnly(store.ManagedPath);
+            Assert.False(EqualizerApoFileAcl.HasAudioEngineReadAccess(configPath));
+            Assert.False(EqualizerApoFileAcl.HasAudioEngineReadAccess(store.ManagedPath));
+
+            var changed = store.EnsureIntegrated();
+
+            Assert.False(changed);
+            Assert.True(EqualizerApoFileAcl.HasAudioEngineReadAccess(configPath));
+            Assert.True(EqualizerApoFileAcl.HasAudioEngineReadAccess(store.ManagedPath));
+            Assert.False(store.EnsureIntegrated());
+        }
+    }
+
+    private static void MakeOwnerOnly(string path)
+    {
+        var user = WindowsIdentity.GetCurrent().User!;
+        var security = new FileSecurity();
+        security.AddAccessRule(new FileSystemAccessRule(
+            user,
+            FileSystemRights.FullControl,
+            AccessControlType.Allow));
+        new FileInfo(path).SetAccessControl(security);
     }
 
     [Fact]

@@ -5,7 +5,12 @@ using BoostStudio.Core.Models;
 
 namespace BoostStudio.Core.Storage;
 
-public sealed record BackupRestoreResult(bool Success, string Message, AppSettings? Settings = null, UserPresetLibrary? Presets = null);
+public sealed record BackupRestoreResult(
+    bool Success,
+    string Message,
+    AppSettings? Settings = null,
+    UserPresetLibrary? Presets = null,
+    ProfileLibrary? Profiles = null);
 
 /// <summary>
 /// Creates a portable .boostbackup zip containing settings and user EQ presets.
@@ -16,16 +21,20 @@ public sealed class BackupService
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly SettingsStore _settingsStore;
     private readonly PresetStore _presetStore;
+    private readonly ProfileStore? _profileStore;
     private readonly ILogService? _log;
 
-    public BackupService(SettingsStore settingsStore, PresetStore presetStore, ILogService? log = null)
+    public BackupService(SettingsStore settingsStore, PresetStore presetStore,
+        ILogService? log = null, ProfileStore? profileStore = null)
     {
         _settingsStore = settingsStore;
         _presetStore = presetStore;
+        _profileStore = profileStore;
         _log = log;
     }
 
-    public void Export(string destinationPath, AppSettings settings, UserPresetLibrary presets, string? diagnostics = null)
+    public void Export(string destinationPath, AppSettings settings, UserPresetLibrary presets,
+        string? diagnostics = null, ProfileLibrary? profiles = null)
     {
         var temporary = destinationPath + ".tmp";
         try
@@ -36,12 +45,14 @@ public sealed class BackupService
             {
                 WriteEntry(archive, "settings.json", JsonSerializer.Serialize(settings, JsonOptions));
                 WriteEntry(archive, "presets.json", JsonSerializer.Serialize(presets, JsonOptions));
+                if (profiles is not null)
+                    WriteEntry(archive, "profiles.json", JsonSerializer.Serialize(profiles, JsonOptions));
                 WriteEntry(archive, "manifest.json", JsonSerializer.Serialize(new
                 {
                     product = AppInfo.ProductName,
                     version = AppInfo.Version,
                     exportedUtc = DateTime.UtcNow,
-                    format = 1
+                    format = 2
                 }, JsonOptions));
 
                 if (!string.IsNullOrWhiteSpace(diagnostics))
@@ -103,7 +114,20 @@ public sealed class BackupService
                 presets.Normalize();
             }
 
-            return new BackupRestoreResult(true, "Backup verified.", settings, presets);
+            ProfileLibrary? profiles = null;
+            var profileEntry = archive.GetEntry("profiles.json");
+            if (profileEntry is not null)
+            {
+                using var stream = profileEntry.Open();
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                profiles = JsonSerializer.Deserialize<ProfileLibrary>(reader.ReadToEnd(), new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                profiles?.Normalize();
+            }
+
+            return new BackupRestoreResult(true, "Backup verified.", settings, presets, profiles);
         }
         catch (Exception ex)
         {
@@ -112,10 +136,17 @@ public sealed class BackupService
         }
     }
 
-    public void ApplyImported(AppSettings settings, UserPresetLibrary presets)
+    public void ApplyImported(AppSettings settings, UserPresetLibrary presets, ProfileLibrary? profiles = null)
     {
         _settingsStore.Save(settings);
         _presetStore.Save(presets);
+        if (profiles is not null)
+        {
+            if (_profileStore is not null)
+                _profileStore.Save(profiles);
+            else
+                new ProfileStore(log: _log).Save(profiles);
+        }
     }
 
     private static void WriteEntry(ZipArchive archive, string name, string content)

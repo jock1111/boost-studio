@@ -69,6 +69,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Border x:Name="NavIcon" Width="30" Height="30" CornerRadius="8"
                                                 Background="#101D26" BorderBrush="#1B2C38" BorderThickness="1">
@@ -84,6 +85,9 @@
                                                        Opacity="0.58" TextTrimming="CharacterEllipsis"
                                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
                                         </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Shortcut}" FontSize="9"
+                                                   Opacity="0.38" VerticalAlignment="Center" Margin="6,0,0,0"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
                                     </Grid>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"

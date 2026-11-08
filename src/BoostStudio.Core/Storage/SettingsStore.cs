@@ -146,6 +146,95 @@ public sealed class PresetStore
     }
 }
 
+/// <summary>
+/// Persists the user's named sound profiles. Profiles are valuable user work, so
+/// the file is written through <see cref="AtomicFile"/> with an automatic .bak copy
+/// and is recovered if the primary file is corrupted.
+/// </summary>
+public sealed class ProfileStore
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip
+    };
+
+    private readonly string _path;
+    private readonly ILogService? _log;
+
+    public ProfileStore(string? path = null, ILogService? log = null)
+    {
+        _path = path ?? AppPaths.ProfilesFile;
+        _log = log;
+    }
+
+    public string FilePath => _path;
+
+    public ProfileLibrary Load()
+    {
+        try
+        {
+            if (!File.Exists(_path))
+                return new ProfileLibrary();
+
+            var json = File.ReadAllText(_path, Encoding.UTF8);
+            var library = JsonSerializer.Deserialize<ProfileLibrary>(json, JsonOptions) ?? new ProfileLibrary();
+            library.Normalize();
+            return library;
+        }
+        catch (Exception ex)
+        {
+            _log?.Error($"Could not load sound profiles from {_path}. Attempting the automatic backup.", ex);
+            return TryLoadBackup() ?? new ProfileLibrary();
+        }
+    }
+
+    private ProfileLibrary? TryLoadBackup()
+    {
+        try
+        {
+            var backup = _path + ".bak";
+            if (!File.Exists(backup))
+                return null;
+
+            var json = File.ReadAllText(backup, Encoding.UTF8);
+            var library = JsonSerializer.Deserialize<ProfileLibrary>(json, JsonOptions);
+            if (library is null)
+                return null;
+
+            library.Normalize();
+            _log?.Info("Recovered sound profiles from the automatic backup.");
+            try
+            {
+                var quarantine = $"{_path}.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}";
+                if (File.Exists(_path))
+                    File.Move(_path, quarantine);
+            }
+            catch
+            {
+                // Quarantine is best effort.
+            }
+
+            return library;
+        }
+        catch (Exception ex)
+        {
+            _log?.Error("Could not recover sound profiles from the automatic backup.", ex);
+            return null;
+        }
+    }
+
+    public void Save(ProfileLibrary library)
+    {
+        library.Normalize();
+        var json = JsonSerializer.Serialize(library, JsonOptions);
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        AtomicFile.WriteAllText(_path, json, createBackup: true);
+    }
+}
+
 public static class AtomicFile
 {
     public static void WriteAllText(string path, string content, bool createBackup, string? temporaryDirectory = null)

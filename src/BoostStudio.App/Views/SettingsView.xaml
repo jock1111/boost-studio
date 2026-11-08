@@ -128,10 +128,21 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="The DSP file was written, but Windows has no Equalizer APO APO registered on the target output. Enable it in Equalizer APO's Device Selector, then recheck."
-                                       Style="{StaticResource Caption}" Foreground="#E9D49F"
-                                       TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SuggestedApoOutputText}" Style="{StaticResource Caption}"
+                                           Foreground="#F2D88B" TextWrapping="Wrap" FontWeight="SemiBold"
+                                           Margin="0,0,0,3"
+                                           Visibility="{Binding HasSuggestedApoOutput, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="The DSP file was written, but Windows has no Equalizer APO APO registered on the target output. Enable it in Equalizer APO's Device Selector, then recheck."
+                                           Style="{StaticResource Caption}" Foreground="#E9D49F"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                                <Button Content="Use that output" Style="{StaticResource SubtleButton}"
+                                        Height="32" Padding="12,0"
+                                        Command="{Binding UseSuggestedApoOutputCommand}"
+                                        Margin="0,0,8,0"
+                                        Visibility="{Binding HasSuggestedApoOutput, Converter={StaticResource BoolToVis}}" />
                                 <Button Content="Device selector" Style="{StaticResource SecondaryButton}"
                                         Height="32" Padding="12,0"
                                         Command="{Binding OpenDeviceSelectorCommand}" />
@@ -247,6 +258,14 @@
                                 Command="{Binding RestoreBaselineCommand}" Height="34" Margin="0,0,7,7"
                                 IsEnabled="{Binding CanRestoreBaseline}"
                                 Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Test audio engine" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding DataContext.TestAudioEngineCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                Height="34" Padding="14,0" Margin="0,0,7,7"
+                                ToolTip="Play a safe tone, measure WASAPI loopback and verify that the DSP actually reaches this output."
+                                Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Testing…" Style="{StaticResource SubtleButton}"
+                                Height="34" Padding="14,0" Margin="0,0,7,7" IsEnabled="False"
+                                Visibility="{Binding DataContext.IsTestingAudioEngine, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource BoolToVis}}" />
                         <Button Content="Preview DSP file" Style="{StaticResource SubtleButton}"
                                 Command="{Binding PreviewConfigCommand}" Height="34" Margin="0,0,7,7" />
                         <Button Content="Open config folder" Style="{StaticResource SubtleButton}"
@@ -371,9 +390,12 @@
                                                TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
                                         <TextBlock Text="● Enabled" FontSize="10" Foreground="{StaticResource SuccessBrush}"
-                                                   Visibility="{Binding ApoAssociated, Converter={StaticResource BoolToVis}}" />
+                                                   Visibility="{Binding ShowApoEnabled, Converter={StaticResource BoolToVis}}" />
                                         <TextBlock Text="○ Not enabled" FontSize="10" Foreground="{StaticResource WarningBrush}"
-                                                   Visibility="{Binding ApoAssociated, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                   Visibility="{Binding ShowApoNotEnabled, Converter={StaticResource BoolToVis}}" />
+                                        <TextBlock Text="Bluetooth" FontSize="10" Foreground="{StaticResource TextMutedBrush}"
+                                                   Visibility="{Binding ShowBluetoothNotice, Converter={StaticResource BoolToVis}}"
+                                                   ToolTip="Bluetooth output — processing depends on the device and codec" />
                                     </StackPanel>
                                 </Grid>
                             </DataTemplate>

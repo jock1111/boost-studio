@@ -29,6 +29,8 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly Action _reloadAll;
     private readonly Action<UserPresetLibrary> _libraryReplaced;
     private readonly Func<UserPresetLibrary> _libraryProvider;
+    private readonly Func<ProfileLibrary> _profileLibraryProvider;
+    private readonly Action<ProfileLibrary> _profileLibraryReplaced;
 
     private ObservableCollection<AudioDeviceInfo> _devices = new();
     private AudioDeviceInfo? _selectedMonitoringDevice;
@@ -53,7 +55,9 @@ public sealed class SettingsViewModel : ObservableObject
         Action hotkeysChanged,
         Action reloadAll,
         Action<UserPresetLibrary> libraryReplaced,
-        Func<UserPresetLibrary> libraryProvider)
+        Func<UserPresetLibrary> libraryProvider,
+        Func<ProfileLibrary> profileLibraryProvider,
+        Action<ProfileLibrary> profileLibraryReplaced)
     {
         _settings = settings;
         _dialogs = dialogs;
@@ -70,6 +74,8 @@ public sealed class SettingsViewModel : ObservableObject
         _reloadAll = reloadAll;
         _libraryReplaced = libraryReplaced;
         _libraryProvider = libraryProvider;
+        _profileLibraryProvider = profileLibraryProvider;
+        _profileLibraryReplaced = profileLibraryReplaced;
 
         RefreshDevicesCommand = new RelayCommand(() => RefreshDevices(true));
         SetWindowsDefaultCommand = new RelayCommand(SetWindowsDefault);
@@ -657,18 +663,35 @@ public sealed class SettingsViewModel : ObservableObject
         IsTestingAudioEngine = true;
         try
         {
-            var result = await _engine.TestAudioProcessingAsync(_settings);
+            // Keep the UI responsive while tones play and configs are swapped.
+            var result = await Task.Run(() => _engine.TestAudioProcessingAsync(_settings));
             var message = new StringBuilder();
-            message.AppendLine($"Equalizer APO installed: {(result.ApoInstalled ? "✓" : "✗")}");
-            message.AppendLine($"Correct endpoint configured: {(result.CorrectEndpoint ? "✓" : "✗")}");
-            message.AppendLine($"Configuration written: {(result.ConfigWritten ? "✓" : "✗")}");
-            message.AppendLine($"Runtime processing verified: {(result.ProcessingVerified ? "✓" : "✗")}");
-            message.AppendLine($"Actual gain change measured: {(result.GainChangeMeasured ? "✓" : "✗")}");
+            message.AppendLine($"Equalizer APO detected: {(result.ApoInstalled ? "✓" : "✗")}");
+            message.AppendLine($"APO attached to target output: {(result.CorrectEndpoint ? "✓" : "✗")}");
+            message.AppendLine($"DSP configuration written: {(result.ConfigWritten ? "✓" : "✗")}");
+            message.AppendLine($"Loopback tone captured: {(result.GainChangeMeasured || result.Steps?.Count > 0 ? "✓" : "✗")}");
+            message.AppendLine(result.GainChangeMeasured
+                ? $"-18 dB test measured: {result.MeasuredDeltaDb:+0.0;-0.0;0.0} dB (expected -18.0 dB) ✓"
+                : "-18 dB test measured: no reliable change ✗");
+            message.AppendLine(result.BassResponseMeasured
+                ? "Bass response measured: ✓"
+                : "Bass response measured: ✗");
+            message.AppendLine(result.VolumeGainMeasured
+                ? "Volume gain measured: ✓"
+                : "Volume gain measured: ✗");
+            message.AppendLine($"Bass and volume tested independently: {(result.BoostersIndependent ? "✓" : "✗")}");
+            if (!string.IsNullOrWhiteSpace(result.DeviceName))
+                message.AppendLine($"Loopback device: {result.DeviceName}");
+            if (!string.IsNullOrWhiteSpace(result.ReportPath))
+                message.AppendLine($"Report: {result.ReportPath}");
             message.AppendLine();
             if (!string.IsNullOrWhiteSpace(result.Detail))
                 message.AppendLine(result.Detail);
+            message.AppendLine();
+            message.AppendLine("Manual listening check: play music, then toggle Bass Booster and Volume Booster separately. The loopback test proves the engine path; your ears confirm the result on your speakers/headphones.");
 
-            if (result.ProcessingVerified && result.GainChangeMeasured)
+            if (result.ProcessingVerified && result.GainChangeMeasured &&
+                result.BassResponseMeasured && result.VolumeGainMeasured)
                 _dialogs.ShowSuccess("Audio Engine Test Passed", message.ToString());
             else if (result.ProcessingVerified)
                 _dialogs.ShowWarning("Audio Engine Partially Verified", message.ToString());
@@ -770,10 +793,10 @@ public sealed class SettingsViewModel : ObservableObject
         try
         {
             var diagnostics = BuildDiagnostics();
-            _backup.Export(dialog.FileName, _settings, GetLibrary(), diagnostics);
+            _backup.Export(dialog.FileName, _settings, GetLibrary(), diagnostics, GetProfiles());
             LastBackupText = $"Exported {DateTime.Now:HH:mm} · {dialog.FileName}";
             _dialogs.ShowSuccess("Backup exported",
-                "Your settings and user equalizer presets were saved.",
+                "Your settings, sound profiles and user equalizer presets were saved.",
                 dialog.FileName);
         }
         catch (Exception ex)
@@ -802,7 +825,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
 
         if (!_dialogs.Confirm("Replace current settings?",
-                "Importing this backup replaces the current settings and user equalizer presets. Export a backup first if you want to keep the current state.",
+                "Importing this backup replaces the current settings, sound profiles and user equalizer presets. Export a backup first if you want to keep the current state.",
                 "Import", "Cancel", danger: true))
             return;
 
@@ -810,7 +833,7 @@ public sealed class SettingsViewModel : ObservableObject
         {
             _settings.CopyFrom(result.Settings);
             var presets = result.Presets ?? new UserPresetLibrary();
-            _backup.ApplyImported(_settings, presets);
+            _backup.ApplyImported(_settings, presets, result.Profiles);
             try
             {
                 _startup.Apply(_settings.Application.StartWithWindows, _settings.Application.StartMinimized);
@@ -821,8 +844,12 @@ public sealed class SettingsViewModel : ObservableObject
             }
 
             _libraryReplaced(presets);
+            // Old backups do not contain profiles. Preserve the current library in
+            // that case instead of silently deleting the user's saved setups.
+            if (result.Profiles is not null)
+                _profileLibraryReplaced(result.Profiles);
             _reloadAll();
-            _dialogs.ShowSuccess("Backup restored", "Settings and presets were imported successfully.");
+            _dialogs.ShowSuccess("Backup restored", "Settings, profiles and presets were imported successfully.");
         }
         catch (Exception ex)
         {
@@ -949,6 +976,8 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     private UserPresetLibrary GetLibrary() => _libraryProvider();
+
+    private ProfileLibrary GetProfiles() => _profileLibraryProvider();
 
     private void SyncStartupState()
     {

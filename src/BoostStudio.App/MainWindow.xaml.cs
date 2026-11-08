@@ -13,7 +13,9 @@ namespace BoostStudio.App;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
+    private readonly DispatcherTimer _placementTimer;
     private bool _allowClose;
+    private bool _restoringPlacement;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -21,11 +23,113 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
 
+        _placementTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        _placementTimer.Tick += OnPlacementTimerTick;
+
         _viewModel.ShowWindowRequested += OnShowWindowRequested;
         _viewModel.ExitRequested += OnExitRequested;
         SourceInitialized += OnSourceInitialized;
         StateChanged += OnWindowStateChanged;
         Closing += OnWindowClosing;
+        Closed += (_, _) => _placementTimer.Stop();
+        LocationChanged += OnPlacementChanged;
+        SizeChanged += OnPlacementChanged;
+        PreviewKeyDown += OnPreviewKeyDown;
+        RestoreWindowPlacement();
+    }
+
+    private void RestoreWindowPlacement()
+    {
+        var app = _viewModel.SettingsData.Application;
+        _restoringPlacement = true;
+        try
+        {
+            Width = app.WindowWidth;
+            Height = app.WindowHeight;
+
+            if (app.WindowLeft is { } left && app.WindowTop is { } top &&
+                IsOnScreen(left, top, Width, Height))
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = left;
+                Top = top;
+            }
+            else
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+
+            if (app.WindowMaximized)
+                WindowState = WindowState.Maximized;
+        }
+        finally
+        {
+            _restoringPlacement = false;
+        }
+    }
+
+    private static bool IsOnScreen(double left, double top, double width, double height)
+    {
+        // Keep a reasonable part of the window on a currently connected display.
+        return left + width > SystemParameters.VirtualScreenLeft + 80 &&
+               top + height > SystemParameters.VirtualScreenTop + 80 &&
+               left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 80 &&
+               top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 80;
+    }
+
+    private void OnPlacementChanged(object? sender, EventArgs e)
+    {
+        if (_restoringPlacement) return;
+        _placementTimer.Stop();
+        _placementTimer.Start();
+    }
+
+    private void OnPlacementTimerTick(object? sender, EventArgs e)
+    {
+        _placementTimer.Stop();
+        SavePlacement();
+    }
+
+    private void SavePlacement()
+    {
+        var bounds = WindowState == WindowState.Normal
+            ? new Rect(Left, Top, ActualWidth, ActualHeight)
+            : RestoreBounds;
+
+        if (bounds.IsEmpty || bounds.Width < 1 || bounds.Height < 1) return;
+
+        _viewModel.SaveWindowPlacement(bounds.Left, bounds.Top, bounds.Width, bounds.Height,
+            WindowState == WindowState.Maximized);
+    }
+
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers != ModifierKeys.Control)
+            return;
+
+        var page = e.Key switch
+        {
+            Key.D1 or Key.NumPad1 => "dashboard",
+            Key.D2 or Key.NumPad2 => "bass",
+            Key.D3 or Key.NumPad3 => "volume",
+            Key.D4 or Key.NumPad4 => "equalizer",
+            Key.D5 or Key.NumPad5 => "profiles",
+            Key.D6 or Key.NumPad6 => "settings",
+            _ => null
+        };
+
+        if (page is not null)
+        {
+            _viewModel.NavigateCommand.Execute(page);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.M)
+        {
+            _viewModel.ProcessingEnabled = !_viewModel.ProcessingEnabled;
+            e.Handled = true;
+        }
     }
 
     public void ShowFromTray()
@@ -69,6 +173,8 @@ public partial class MainWindow : Window
 
     private void OnWindowClosing(object? sender, CancelEventArgs e)
     {
+        SavePlacement();
+
         if (_allowClose)
             return;
 
@@ -101,6 +207,7 @@ public partial class MainWindow : Window
 
         // Let Windows complete the minimize transition before hiding the window so
         // the taskbar animation does not visibly snap.
+        SavePlacement();
         Dispatcher.BeginInvoke(() =>
         {
             if (!_viewModel.Settings.MinimizeToTray) return;

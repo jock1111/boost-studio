@@ -231,19 +231,16 @@ public static class DspMath
         if (maxBoost <= 0.01)
             return 0;
 
-        // For bass-only configurations, reserve less headroom to allow audible bass boost.
-        // The low-shelf filter adds gain at low frequencies; if we reserve full headroom,
-        // the preamp cancels the boost entirely, making it inaudible.
-        var isBassOnly = settings.Bass.Enabled && settings.Bass.EffectiveGainDb > 0.01
-            && !settings.Volume.Enabled
-            && !settings.Equalizer.Enabled;
-
-        if (isBassOnly)
-        {
-            // Reserve ~30% of max boost for safety, leaving ~70% as audible boost
-            return Math.Round(Math.Min(maxBoost * 0.3, maxBoost + SafetyMarginDb), 1);
-        }
-
+        // Reserve the full measured static boost plus a small safety margin. This is the
+        // only value that guarantees no clipping for any input signal: the largest possible
+        // filter gain is maxBoost, so a preamp of -(maxBoost + margin) keeps every frequency
+        // below full scale. Reserving only part of the boost (for example 30%) leaves a
+        // positive net gain and can clip loud bass or EQ content.
+        //
+        // A bass boost remains audible with full headroom because the midrange and treble
+        // are attenuated while the bass stays at its original absolute level. The result is
+        // a relative bass boost, just at a lower overall playback level. Users who want an
+        // absolute boost can disable Auto headroom and use the clip indicator / AGC.
         return Math.Round(maxBoost + SafetyMarginDb, 1);
     }
 

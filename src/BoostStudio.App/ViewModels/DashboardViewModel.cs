@@ -16,6 +16,7 @@ public sealed class DashboardViewModel : ObservableObject
         MonitorViewModel monitor,
         TestToneViewModel testTone,
         EngineStatusViewModel engine,
+        ProfilesViewModel profiles,
         Func<bool> getMaster,
         Action<bool> setMaster,
         Action<string> navigate)
@@ -26,6 +27,7 @@ public sealed class DashboardViewModel : ObservableObject
         Monitor = monitor;
         TestTone = testTone;
         Engine = engine;
+        Profiles = profiles;
         _getMaster = getMaster;
         _setMaster = setMaster;
         NavigateCommand = new RelayCommand<string>(key =>
@@ -38,6 +40,7 @@ public sealed class DashboardViewModel : ObservableObject
         Volume.PropertyChanged += OnChildChanged;
         Equalizer.PropertyChanged += OnChildChanged;
         Engine.PropertyChanged += OnChildChanged;
+        Profiles.PropertyChanged += OnChildChanged;
     }
 
     public BassBoosterViewModel Bass { get; }
@@ -46,7 +49,13 @@ public sealed class DashboardViewModel : ObservableObject
     public MonitorViewModel Monitor { get; }
     public TestToneViewModel TestTone { get; }
     public EngineStatusViewModel Engine { get; }
+    public ProfilesViewModel Profiles { get; }
     public RelayCommand<string> NavigateCommand { get; }
+
+    public string ProfileStatusText => Profiles.ActiveProfileText;
+    public string ProfileCountText => Profiles.Profiles.Count == 1
+        ? "1 saved profile"
+        : $"{Profiles.Profiles.Count} saved profiles";
 
     public bool ProcessingEnabled
     {
@@ -106,7 +115,8 @@ public sealed class DashboardViewModel : ObservableObject
         OnPropertyChanged(nameof(ProcessingEnabled), nameof(ActiveModuleCount), nameof(ActiveModules),
             nameof(HeroStatus), nameof(MasterStatus), nameof(ActiveCountText), nameof(FilterCountText),
             nameof(HeadroomText), nameof(EngineStatusText), nameof(MonitorStatusText),
-            nameof(BassPresetText), nameof(EqPresetText), nameof(VolumePresetText));
+            nameof(BassPresetText), nameof(EqPresetText), nameof(VolumePresetText),
+            nameof(ProfileStatusText), nameof(ProfileCountText));
     }
 
     private void OnChildChanged(object? sender, PropertyChangedEventArgs e) => Refresh();

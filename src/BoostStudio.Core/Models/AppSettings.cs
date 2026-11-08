@@ -64,7 +64,7 @@ public sealed class AppSettings
 
         SchemaVersion = AppInfo.SettingsSchemaVersion;
 
-        if (LastPage is not ("dashboard" or "bass" or "volume" or "equalizer" or "settings"))
+        if (LastPage is not ("dashboard" or "bass" or "volume" or "equalizer" or "profiles" or "settings"))
             LastPage = "dashboard";
 
         if (!string.IsNullOrWhiteSpace(EqualizerApoPathOverride))
@@ -78,6 +78,37 @@ public sealed class AppSettings
         var settings = new AppSettings();
         settings.Normalize();
         return settings;
+    }
+
+    /// <summary>
+    /// Deep copy for background work. Reading the live settings from a worker thread while
+    /// the UI edits them can otherwise produce a mixed, half-updated DSP configuration.
+    /// The source is not normalized or modified.
+    /// </summary>
+    public AppSettings Clone()
+    {
+        var copy = new AppSettings
+        {
+            SchemaVersion = SchemaVersion,
+            ProcessingEnabled = ProcessingEnabled,
+            AutoHeadroom = AutoHeadroom,
+            EqualizerApoPathOverride = EqualizerApoPathOverride,
+            LastPage = LastPage
+        };
+
+        copy.Bass = new BassSettings();
+        copy.Bass.CopyFrom(Bass);
+        copy.Volume = new VolumeSettings();
+        copy.Volume.CopyFrom(Volume);
+        copy.Equalizer = new EqualizerSettings();
+        copy.Equalizer.CopyFrom(Equalizer);
+        copy.Audio = new AudioSettings();
+        copy.Audio.CopyFrom(Audio);
+        copy.Application = new ApplicationSettings();
+        copy.Application.CopyFrom(Application);
+        copy.Hotkeys = new HotkeySettings();
+        copy.Hotkeys.CopyFrom(Hotkeys);
+        return copy;
     }
 
     /// <summary>Copies values into the existing object graph, preserving view-model references.</summary>
@@ -274,8 +305,39 @@ public sealed class ApplicationSettings
     /// <summary>Set once the first-run Equalizer APO introduction has been shown.</summary>
     public bool HasSeenWelcome { get; set; }
 
+    /// <summary>Last window width in device-independent pixels. Restored on next launch.</summary>
+    public double WindowWidth { get; set; } = 1420;
+
+    /// <summary>Last window height in device-independent pixels. Restored on next launch.</summary>
+    public double WindowHeight { get; set; } = 900;
+
+    /// <summary>Last window left position; null means center on the primary display.</summary>
+    public double? WindowLeft { get; set; }
+
+    /// <summary>Last window top position; null means center on the primary display.</summary>
+    public double? WindowTop { get; set; }
+
+    public bool WindowMaximized { get; set; }
+
     public void Normalize()
     {
+        if (double.IsNaN(WindowWidth) || double.IsInfinity(WindowWidth) || WindowWidth < 1080)
+            WindowWidth = 1420;
+        else if (WindowWidth > 7680)
+            WindowWidth = 7680;
+
+        if (double.IsNaN(WindowHeight) || double.IsInfinity(WindowHeight) || WindowHeight < 690)
+            WindowHeight = 900;
+        else if (WindowHeight > 4320)
+            WindowHeight = 4320;
+
+        if (WindowLeft is null || double.IsNaN(WindowLeft.Value) ||
+            double.IsInfinity(WindowLeft.Value) || WindowLeft < -10000 || WindowLeft > 10000)
+            WindowLeft = null;
+
+        if (WindowTop is null || double.IsNaN(WindowTop.Value) ||
+            double.IsInfinity(WindowTop.Value) || WindowTop < -10000 || WindowTop > 10000)
+            WindowTop = null;
     }
 
     public void CopyFrom(ApplicationSettings other)
@@ -287,6 +349,11 @@ public sealed class ApplicationSettings
         ShowTrayNotifications = other.ShowTrayNotifications;
         ShowClipWarnings = other.ShowClipWarnings;
         HasSeenWelcome = other.HasSeenWelcome;
+        WindowWidth = other.WindowWidth;
+        WindowHeight = other.WindowHeight;
+        WindowLeft = other.WindowLeft;
+        WindowTop = other.WindowTop;
+        WindowMaximized = other.WindowMaximized;
     }
 }
 
@@ -319,7 +386,7 @@ public sealed class HotkeySettings
 public static class AppInfo
 {
     public const string ProductName = "Boost Studio";
-    public const string Version = "1.0.0";
+    public const string Version = "1.1.0";
     public const int SettingsSchemaVersion = 2;
     public const string Tagline = "System-wide sound shaping";
 

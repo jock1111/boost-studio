@@ -14,12 +14,15 @@ public sealed class TrayIconService : IDisposable
     private readonly Forms.ToolStripMenuItem _bassItem;
     private readonly Forms.ToolStripMenuItem _volumeItem;
     private readonly Forms.ToolStripMenuItem _equalizerItem;
+    private readonly Forms.ToolStripMenuItem _profilesItem;
     private readonly Icon? _icon;
     private bool _disposed;
 
     public event EventHandler? ShowRequested;
     public event EventHandler? ExitRequested;
     public event EventHandler? SettingsRequested;
+    public event EventHandler? ProfilesRequested;
+    public event Action<string>? ProfileRequested;
     public event EventHandler? ToggleProcessingRequested;
     public event EventHandler? ToggleBassRequested;
     public event EventHandler? ToggleVolumeRequested;
@@ -43,6 +46,20 @@ public sealed class TrayIconService : IDisposable
         _bassItem = CreateItem("Bass Booster", () => Raise(ToggleBassRequested));
         _volumeItem = CreateItem("Volume Booster", () => Raise(ToggleVolumeRequested));
         _equalizerItem = CreateItem("Equalizer", () => Raise(ToggleEqualizerRequested));
+        _profilesItem = new Forms.ToolStripMenuItem("Profiles")
+        {
+            ForeColor = Color.FromArgb(235, 241, 247)
+        };
+        _profilesItem.DropDown.Renderer = new Forms.ToolStripProfessionalRenderer(new DarkMenuRenderer());
+        _profilesItem.DropDown.BackColor = Color.FromArgb(20, 28, 38);
+        _profilesItem.DropDown.ForeColor = Color.FromArgb(235, 241, 247);
+        _profilesItem.DropDownItems.Add(new Forms.ToolStripMenuItem("(no profiles saved)")
+        {
+            Enabled = false,
+            ForeColor = Color.FromArgb(130, 148, 164)
+        });
+        AddManageProfilesItem();
+
         var settingsItem = CreateItem("Settings", () => Raise(SettingsRequested), Forms.Keys.None);
         var exitItem = CreateItem("Exit Boost Studio", () => Raise(ExitRequested), Forms.Keys.None);
 
@@ -53,6 +70,7 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(_volumeItem);
         menu.Items.Add(_equalizerItem);
         menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(_profilesItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(exitItem);
 
@@ -113,6 +131,50 @@ public sealed class TrayIconService : IDisposable
             dispatcher.BeginInvoke(Update, DispatcherPriority.Background);
         else
             Update();
+    }
+
+    /// <summary>Rebuilds the Profiles submenu with the saved setups from the library.</summary>
+    public void UpdateProfiles(IReadOnlyList<SoundProfile> profiles, string? activeProfileId)
+    {
+        if (_disposed) return;
+
+        void Update()
+        {
+            _profilesItem.DropDownItems.Clear();
+            if (profiles.Count == 0)
+            {
+                _profilesItem.DropDownItems.Add(new Forms.ToolStripMenuItem("(no profiles saved)")
+                {
+                    Enabled = false,
+                    ForeColor = Color.FromArgb(130, 148, 164)
+                });
+            }
+            else
+            {
+                foreach (var profile in profiles.Take(20))
+                {
+                    var id = profile.Id;
+                    var item = CreateItem(profile.Name, () => ProfileRequested?.Invoke(id));
+                    item.Checked = string.Equals(id, activeProfileId, StringComparison.OrdinalIgnoreCase);
+                    item.ToolTipText = profile.ModuleSummary;
+                    _profilesItem.DropDownItems.Add(item);
+                }
+            }
+
+            AddManageProfilesItem();
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+            dispatcher.BeginInvoke(Update, DispatcherPriority.Background);
+        else
+            Update();
+    }
+
+    private void AddManageProfilesItem()
+    {
+        if (_profilesItem.DropDownItems.Count > 0)
+            _profilesItem.DropDownItems.Add(new Forms.ToolStripSeparator());
+        _profilesItem.DropDownItems.Add(CreateItem("Manage profiles…", () => Raise(ProfilesRequested)));
     }
 
     public void ShowNotification(string title, string message)

@@ -232,6 +232,69 @@ public sealed class StorageTests
     }
 
     [Fact]
+    public void BackupRoundTripIncludesSoundProfiles()
+    {
+        using var root = new TempDirectory();
+        var settingsStore = new SettingsStore(root.File("settings.json"));
+        var presetStore = new PresetStore(root.File("presets.json"));
+        var profileStore = new ProfileStore(root.File("profiles.json"));
+        var service = new BackupService(settingsStore, presetStore, profileStore: profileStore);
+
+        var settings = AppSettings.CreateDefault();
+        settings.Bass.Enabled = true;
+        settings.Bass.Intensity = 71;
+        var profiles = new ProfileLibrary();
+        var profile = SoundProfile.Capture("Night listening", settings);
+        profiles.Profiles.Add(profile);
+        profiles.ActiveProfileId = profile.Id;
+
+        var path = root.File("profiles.boostbackup");
+        service.Export(path, settings, new UserPresetLibrary(), profiles: profiles);
+
+        using (var archive = ZipFile.OpenRead(path))
+        {
+            Assert.NotNull(archive.GetEntry("profiles.json"));
+            var manifest = archive.GetEntry("manifest.json")!;
+            using var reader = new StreamReader(manifest.Open(), Encoding.UTF8);
+            Assert.Contains("\"format\": 2", reader.ReadToEnd());
+        }
+
+        var result = service.Import(path);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Profiles);
+        Assert.Single(result.Profiles!.Profiles);
+        Assert.Equal("Night listening", result.Profiles.Profiles[0].Name);
+        Assert.Equal(profile.Id, result.Profiles.ActiveProfileId);
+
+        service.ApplyImported(result.Settings!, result.Presets!, result.Profiles);
+
+        var reloaded = profileStore.Load();
+        Assert.Single(reloaded.Profiles);
+        Assert.Equal(71, reloaded.Profiles[0].Bass.Intensity);
+        Assert.Equal(profile.Id, reloaded.ActiveProfileId);
+    }
+
+    [Fact]
+    public void BackupWithoutProfilesReportsNoProfileSection()
+    {
+        using var root = new TempDirectory();
+        var service = new BackupService(
+            new SettingsStore(root.File("settings.json")),
+            new PresetStore(root.File("presets.json")));
+        var path = root.File("legacy.boostbackup");
+        service.Export(path, AppSettings.CreateDefault(), new UserPresetLibrary());
+
+        using (var archive = ZipFile.OpenRead(path))
+            Assert.Null(archive.GetEntry("profiles.json"));
+
+        var result = service.Import(path);
+
+        Assert.True(result.Success);
+        Assert.Null(result.Profiles);
+    }
+
+    [Fact]
     public void BackupImportRejectsFilesWithoutSettingsEntry()
     {
         using var root = new TempDirectory();

@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using BoostStudio.App.Infrastructure;
 using BoostStudio.App.Services;
+using BoostStudio.Core.Audio;
 using BoostStudio.Core.Dsp;
 using BoostStudio.Core.Engine;
 using BoostStudio.Core.Models;
@@ -20,6 +21,7 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
     private static readonly Brush MutedBrush = Freeze(Color.FromRgb(130, 148, 165));
 
     private readonly AudioEngineService _engine;
+    private readonly AudioDeviceService _audioDevices;
     private readonly AppSettings _settings;
     private readonly IDialogService _dialogs;
     private readonly ShellService _shell;
@@ -41,6 +43,7 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
         Action restartElevated)
     {
         _engine = engine;
+        _audioDevices = new AudioDeviceService(log);
         _settings = settings;
         _dialogs = dialogs;
         _shell = shell;
@@ -50,6 +53,7 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
 
         RefreshCommand = CreateCommand(RefreshAsync);
         ConnectCommand = CreateCommand(ConnectAsync);
+        UseSuggestedApoOutputCommand = CreateCommand(UseSuggestedApoOutputAsync);
         DisconnectCommand = CreateCommand(DisconnectAsync);
         RestoreBaselineCommand = CreateCommand(RestoreBaselineAsync);
         InstallCommand = CreateCommand(InstallAsync);
@@ -68,6 +72,7 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
 
     public AsyncRelayCommand RefreshCommand { get; }
     public AsyncRelayCommand ConnectCommand { get; }
+    public AsyncRelayCommand UseSuggestedApoOutputCommand { get; }
     public AsyncRelayCommand DisconnectCommand { get; }
     public AsyncRelayCommand RestoreBaselineCommand { get; }
     public AsyncRelayCommand InstallCommand { get; }
@@ -90,6 +95,7 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
     public bool IsReady => _status.IsReady;
     public bool IsIntegrated => _status.IntegrationActive;
     public bool IsBypassed => _status.State == EngineState.Bypassed;
+    public bool ProcessingVerified => _status.ProcessingVerified;
     public bool IsMissing => _status.State == EngineState.NotInstalled;
     public bool NeedsPermission => _status.State == EngineState.PermissionDenied;
     public bool IsApoNotEnabled => _status.State == EngineState.ApoNotEnabled;
@@ -122,6 +128,13 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
         {
             if (!_status.ApoStatusChecked)
                 return "Device APO association could not be read.";
+            if (!_status.TargetApoEnabled && _status.ApoEnabledDeviceCount > 0)
+            {
+                return _status.ApoEnabledDeviceCount == 1
+                    ? "1 output has Equalizer APO enabled, but not the target output."
+                    : $"{_status.ApoEnabledDeviceCount} outputs have Equalizer APO enabled, but not the target output.";
+            }
+
             return _status.ApoEnabledDeviceCount switch
             {
                 0 => "No active output has Equalizer APO enabled.",
@@ -138,16 +151,36 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
             if (!string.IsNullOrWhiteSpace(_status.VerificationText))
                 return _status.VerificationText!;
 
+            if (_status.ProcessingVerified)
+            {
+                var delta = _status.MeasuredPreampDeltaDb is { } measured
+                    ? $" The -18 dB test measured {measured:+0.0;-0.0;0.0} dB."
+                    : string.Empty;
+                return $"Processing verified by WASAPI loopback.{delta}";
+            }
+
             return _status.State switch
             {
                 EngineState.NotInstalled => "Not verified: Equalizer APO is not installed.",
                 EngineState.PermissionDenied => "Not verified: the configuration was not written.",
                 EngineState.NotIntegrated => "Not verified: no active configuration.",
                 EngineState.ApoNotEnabled => "Configuration written; audible processing was not verified.",
-                _ => "Configuration written; audible processing was not measured."
+                _ => "Configuration written; audible processing was not measured. Run Test audio engine in Settings."
             };
         }
     }
+
+    public bool HasSuggestedApoOutput => IsApoNotEnabled &&
+                                         !string.IsNullOrWhiteSpace(_status.SuggestedApoDeviceId) &&
+                                         !string.IsNullOrWhiteSpace(_status.SuggestedApoDeviceName);
+
+    public string SuggestedApoOutputText => HasSuggestedApoOutput
+        ? $"Equalizer APO is enabled on “{_status.SuggestedApoDeviceName}”, but not on the current Windows default output."
+        : string.Empty;
+
+    public string LastVerifiedText => _status.LastVerifiedUtc is { } verified
+        ? $"Measured {verified.ToLocalTime():HH:mm:ss}"
+        : "Not measured this session";
 
     public string VersionText => string.IsNullOrWhiteSpace(_status.Version)
         ? "Version unknown"
@@ -191,7 +224,8 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
 
     public Brush StateBrush => _status.State switch
     {
-        EngineState.Ready => ReadyBrush,
+        EngineState.Ready when _status.ProcessingVerified => ReadyBrush,
+        EngineState.Ready => WarningBrush,
         EngineState.Bypassed => WarningBrush,
         EngineState.NotInstalled => DangerBrush,
         EngineState.PermissionDenied => WarningBrush,
@@ -214,7 +248,8 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
 
     public string StatusGlyph => _status.State switch
     {
-        EngineState.Ready => "\uE73E",
+        EngineState.Ready when _status.ProcessingVerified => "\uE73E",
+        EngineState.Ready => "\uE946",
         EngineState.Bypassed => "\uE7BA",
         EngineState.NotInstalled => "\uE7BA",
         EngineState.PermissionDenied => "\uE72E",
@@ -226,7 +261,8 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
 
     public string StateHeader => _status.State switch
     {
-        EngineState.Ready => "DSP configuration written and APO attached",
+        EngineState.Ready when _status.ProcessingVerified => "DSP processing verified by measured loopback",
+        EngineState.Ready => "DSP configuration written; processing not measured",
         EngineState.Bypassed => "Engine connected, audio bypassed",
         EngineState.NotInstalled => "Equalizer APO is required",
         EngineState.NotIntegrated => "Ready to connect",
@@ -248,6 +284,7 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
             RestoreBaselineCommand.RaiseCanExecuteChanged();
             InstallCommand.RaiseCanExecuteChanged();
             GrantAccessCommand.RaiseCanExecuteChanged();
+            UseSuggestedApoOutputCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -300,7 +337,9 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
             nameof(HasDetail), nameof(IsInstalled), nameof(IsReady), nameof(IsIntegrated),
             nameof(IsBypassed), nameof(IsMissing), nameof(NeedsPermission), nameof(NeedsConnection),
             nameof(IsApoNotEnabled), nameof(NeedsApoSetup), nameof(ApoStatusText),
-            nameof(ApoDeviceCountText), nameof(VerificationText), nameof(CanGrantAccess),
+            nameof(ApoDeviceCountText), nameof(VerificationText), nameof(ProcessingVerified),
+            nameof(HasSuggestedApoOutput), nameof(SuggestedApoOutputText),
+            nameof(LastVerifiedText), nameof(CanGrantAccess),
             nameof(VersionText), nameof(InstallPath), nameof(ConfigPath), nameof(ConfigWriteText),
             nameof(FilterSummary), nameof(PreampText), nameof(HeadroomText), nameof(LastAppliedText),
             nameof(ConnectionDetail), nameof(EngineActionText), nameof(StateBrush),
@@ -328,6 +367,49 @@ public sealed class EngineStatusViewModel : ObservableObject, IDisposable
         UpdateStatus(status);
         if (status.State == EngineState.Error)
             _dialogs.ShowError("Could not connect the audio engine", status.Summary, status.Detail);
+    }
+
+    /// <summary>
+    /// Switches the Windows default output to an endpoint that already has Equalizer
+    /// APO enabled. This is offered only when the current default output is unprocessed,
+    /// and it always asks before changing audio routing.
+    /// </summary>
+    private async Task UseSuggestedApoOutputAsync()
+    {
+        if (!HasSuggestedApoOutput) return;
+
+        var id = _status.SuggestedApoDeviceId!;
+        var name = _status.SuggestedApoDeviceName!;
+        if (!_dialogs.Confirm("Switch Windows default output?",
+                $"Make “{name}” the Windows default output? Equalizer APO is already enabled there, so Boost Studio processing can reach your audio. Sound will move to that device immediately.",
+                "Switch output", "Cancel"))
+            return;
+
+        var result = _audioDevices.TrySetDefaultDevice(id);
+        if (!result.Success)
+        {
+            _dialogs.ShowWarning("Could not switch the default output", result.Message,
+                "Windows Settings → System → Sound → Output lets you choose the default device.");
+            return;
+        }
+
+        // Let the audio policy service settle before re-enumerating endpoints.
+        await Task.Delay(350);
+        var status = await _engine.RefreshAsync(_settings);
+        UpdateStatus(status);
+
+        if (status.TargetApoEnabled)
+        {
+            _dialogs.ShowSuccess("Default output switched",
+                $"Windows now sends audio to “{name}”, where Equalizer APO is enabled.",
+                "Run “Test audio engine” to measure that processing reaches the output.");
+        }
+        else
+        {
+            _dialogs.ShowWarning("Output switched, but the APO is still not detected",
+                "Equalizer APO may need a moment, or the output may need to be enabled in its Device Selector.",
+                name);
+        }
     }
 
     private async Task DisconnectAsync()

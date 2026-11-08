@@ -125,6 +125,13 @@ public sealed class EqualizerApoConfigStore
     {
         Directory.CreateDirectory(ConfigDirectory);
 
+        // Repair files written by older versions even when their content is already
+        // correct. audiodg runs as LocalService and can otherwise not read the DSP.
+        if (EqualizerApoFileAcl.EnsureAudioEngineCanRead(ConfigPath, _log))
+            NotifyAudioEngine(ConfigPath);
+        if (EqualizerApoFileAcl.EnsureAudioEngineCanRead(ManagedPath, _log))
+            NotifyAudioEngine(ManagedPath);
+
         for (var attempt = 0; attempt < MaxWriteAttempts; attempt++)
         {
             var existing = ReadConfigText();
@@ -147,8 +154,7 @@ public sealed class EqualizerApoConfigStore
 
             // Create the include target before config.txt starts referencing it.
             if (!hadManagedFile)
-                AtomicFile.WriteAllText(ManagedPath, BuildManagedPlaceholder(), createBackup: false,
-                    temporaryDirectory: AppPaths.RuntimeDirectory);
+                WriteAtomically(ManagedPath, BuildManagedPlaceholder());
 
             if (TextEquals(existing, result))
                 return !hadManagedFile;
@@ -176,8 +182,7 @@ public sealed class EqualizerApoConfigStore
             return false;
 
         Directory.CreateDirectory(ConfigDirectory);
-        AtomicFile.WriteAllText(ManagedPath, configText, createBackup: false,
-            temporaryDirectory: AppPaths.RuntimeDirectory);
+        WriteAtomically(ManagedPath, configText);
         _log?.Info($"Applied DSP configuration ({configText.Length} characters).");
         return true;
     }
@@ -240,8 +245,7 @@ public sealed class EqualizerApoConfigStore
             CreateTimestampedBackup(current);
 
         var baseline = File.ReadAllText(BaselinePath, Encoding.UTF8);
-        AtomicFile.WriteAllText(ConfigPath, baseline, createBackup: false,
-            temporaryDirectory: AppPaths.RuntimeDirectory);
+        WriteAtomically(ConfigPath, baseline);
 
         if (File.Exists(ManagedPath))
         {
@@ -263,8 +267,7 @@ public sealed class EqualizerApoConfigStore
 
             try
             {
-                AtomicFile.WriteAllText(ConfigPath, content, createBackup: false,
-                    temporaryDirectory: AppPaths.RuntimeDirectory);
+                WriteAtomically(ConfigPath, content);
                 return true;
             }
             catch (IOException) when (attempt < MaxWriteAttempts - 1)
@@ -274,6 +277,37 @@ public sealed class EqualizerApoConfigStore
         }
 
         throw new IOException("Could not write Equalizer APO's config.txt. Another process may be holding the file.");
+    }
+
+    /// <summary>
+    /// Writes an Equalizer APO configuration file, repairs the audio engine's read
+    /// access and makes sure the engine notices the new content.
+    /// </summary>
+    private void WriteAtomically(string path, string content)
+    {
+        AtomicFile.WriteAllText(path, content, createBackup: false,
+            temporaryDirectory: AppPaths.RuntimeDirectory);
+        EqualizerApoFileAcl.EnsureAudioEngineCanRead(path, _log, logChange: false);
+        NotifyAudioEngine(path);
+    }
+
+    /// <summary>
+    /// Equalizer APO detects configuration changes through the destination path's write
+    /// timestamp. AtomicFile replaces the file by renaming a temp file, and that rename
+    /// can be missed by the engine's watcher, leaving the previous configuration (or a
+    /// pass-through state) active. Refreshing the timestamp after the move makes the
+    /// reload deterministic.
+    /// </summary>
+    private void NotifyAudioEngine(string path)
+    {
+        try
+        {
+            File.SetLastWriteTimeUtc(path, DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            _log?.Warn($"Could not timestamp the updated DSP configuration {path}: {ex.Message}");
+        }
     }
 
     private void CaptureBaseline(string existingConfig)

@@ -96,10 +96,10 @@ public sealed class DspConfigBuilderTests
         var config = _builder.Build(settings);
 
         Assert.True(config.Metrics.HeadroomReservedDb > 0);
-        // For bass boost, headroom should be less aggressive to allow audible bass boost.
-        // Reserve ~30% of max static boost, not the full amount.
-        var expectedHeadroom = Math.Round(Math.Min(config.Metrics.StaticMaxBoostDb * 0.3, config.Metrics.StaticMaxBoostDb + 0.5), 1);
-        Assert.Equal(expectedHeadroom, config.Metrics.HeadroomReservedDb, 3);
+        // Auto headroom must reserve the full static boost plus the safety margin.
+        // Reserving less leaves a positive net gain and can clip loud low-frequency content.
+        Assert.Equal(Math.Round(config.Metrics.StaticMaxBoostDb + 0.5, 1),
+            config.Metrics.HeadroomReservedDb, 3);
         Assert.Equal(Math.Round(-config.Metrics.HeadroomReservedDb, 1), config.Metrics.PreampDb, 3);
         Assert.Contains("Auto headroom reserved", config.Text, StringComparison.Ordinal);
     }
