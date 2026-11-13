@@ -172,6 +172,25 @@ public static class DspMath
         return list.ToArray();
     }
 
+    /// <summary>
+    /// Filters that auto headroom compensates. Bass is excluded by default so turning
+    /// Bass Booster on never lowers the rest of the spectrum; the optional safe mode
+    /// (<see cref="BassSettings.ProtectHeadroom"/>) adds it back.
+    /// </summary>
+    public static Biquad[] BuildHeadroomFilters(AppSettings settings, double sampleRate = DefaultSampleRate)
+    {
+        var list = new List<Biquad>(16);
+        if (!settings.ProcessingEnabled)
+            return Array.Empty<Biquad>();
+
+        if (settings.Bass.ProtectHeadroom)
+            list.AddRange(BuildBassFilters(settings.Bass, sampleRate));
+        if (settings.Equalizer.Enabled)
+            list.AddRange(BuildEqFilters(settings.Equalizer.GainsDb, sampleRate));
+        list.AddRange(BuildLoudnessFilters(settings.Volume, sampleRate));
+        return list.ToArray();
+    }
+
     public static double EvaluateResponseDb(IEnumerable<Biquad> filters, double frequencyHz, double sampleRate = DefaultSampleRate)
     {
         var total = 0.0;
@@ -202,12 +221,41 @@ public static class DspMath
 
     /// <summary>
     /// Measures the maximum combined boost of all static filters across the audio band.
-    /// This is used to reserve exactly enough preamp headroom to avoid static clipping.
+    /// This is the total gain the filters can apply and is displayed for diagnostics; it
+    /// is not the amount auto headroom reserves (bass is usually excluded there).
     /// </summary>
     public static double ComputeMaxStaticBoostDb(AppSettings settings, double sampleRate = DefaultSampleRate)
+        => ComputeMaxBoostDb(BuildStaticFilters(settings, sampleRate), sampleRate);
+
+    /// <summary>
+    /// Maximum boost of the filters auto headroom is responsible for. By default this
+    /// excludes the bass shelf, so enabling Bass Booster does not lower mids and highs.
+    /// </summary>
+    public static double ComputeHeadroomBoostDb(AppSettings settings, double sampleRate = DefaultSampleRate)
+        => ComputeMaxBoostDb(BuildHeadroomFilters(settings, sampleRate), sampleRate);
+
+    public static double ComputeHeadroomReservationDb(AppSettings settings, double sampleRate = DefaultSampleRate)
     {
-        var filters = BuildStaticFilters(settings, sampleRate);
-        if (filters.Length == 0) return 0;
+        if (!settings.AutoHeadroom)
+            return 0;
+
+        var maxBoost = ComputeHeadroomBoostDb(settings, sampleRate);
+        if (maxBoost <= 0.01)
+            return 0;
+
+        // Reserve the full measured boost of the headroom-managed filters (EQ and
+        // loudness, plus bass in optional safe mode) and a small safety margin. This
+        // keeps those filters from clipping without a permanent broadband cut just for
+        // enabling bass. The bass shelf is intentionally excluded in the default mode:
+        // its gain is ~0 dB at 1 kHz, so mids and highs stay at their original level.
+        // Very loud, near-full-scale bass content can still clip in that mode; the UI
+        // shows a clipping warning and Protect headroom is the static-guarantee option.
+        return Math.Round(maxBoost + SafetyMarginDb, 1);
+    }
+
+    private static double ComputeMaxBoostDb(IReadOnlyList<Biquad> filters, double sampleRate)
+    {
+        if (filters.Count == 0) return 0;
 
         var maximum = 0.0;
         const int points = 900;
@@ -220,28 +268,6 @@ public static class DspMath
         }
 
         return maximum;
-    }
-
-    public static double ComputeHeadroomReservationDb(AppSettings settings, double sampleRate = DefaultSampleRate)
-    {
-        if (!settings.AutoHeadroom)
-            return 0;
-
-        var maxBoost = ComputeMaxStaticBoostDb(settings, sampleRate);
-        if (maxBoost <= 0.01)
-            return 0;
-
-        // Reserve the full measured static boost plus a small safety margin. This is the
-        // only value that guarantees no clipping for any input signal: the largest possible
-        // filter gain is maxBoost, so a preamp of -(maxBoost + margin) keeps every frequency
-        // below full scale. Reserving only part of the boost (for example 30%) leaves a
-        // positive net gain and can clip loud bass or EQ content.
-        //
-        // A bass boost remains audible with full headroom because the midrange and treble
-        // are attenuated while the bass stays at its original absolute level. The result is
-        // a relative bass boost, just at a lower overall playback level. Users who want an
-        // absolute boost can disable Auto headroom and use the clip indicator / AGC.
-        return Math.Round(maxBoost + SafetyMarginDb, 1);
     }
 
     public static string FormatDb(double value, bool sign = true)

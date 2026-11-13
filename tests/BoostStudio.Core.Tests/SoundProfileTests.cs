@@ -16,6 +16,7 @@ public sealed class SoundProfileTests
         settings.Bass.FrequencyHz = 63;
         settings.Bass.MaxGainDb = 21;
         settings.Bass.ShelfQ = 1.1;
+        settings.Bass.ProtectHeadroom = true;
         settings.Bass.PresetName = "Deep Bass";
         settings.Volume.Enabled = true;
         settings.Volume.BoostPercent = 55;
@@ -38,6 +39,7 @@ public sealed class SoundProfileTests
         settings.AutoHeadroom = true;
         settings.Bass.Enabled = false;
         settings.Bass.Intensity = 1;
+        settings.Bass.ProtectHeadroom = false;
         settings.Volume.Enabled = false;
         settings.Volume.BoostPercent = 3;
         settings.Equalizer.Enabled = false;
@@ -55,6 +57,7 @@ public sealed class SoundProfileTests
         Assert.Equal(63, settings.Bass.FrequencyHz);
         Assert.Equal(21, settings.Bass.MaxGainDb);
         Assert.Equal(1.1, settings.Bass.ShelfQ);
+        Assert.True(settings.Bass.ProtectHeadroom);
         Assert.Equal("Deep Bass", settings.Bass.PresetName);
         Assert.True(settings.Volume.Enabled);
         Assert.Equal(55, settings.Volume.BoostPercent);
@@ -85,6 +88,10 @@ public sealed class SoundProfileTests
         settings.Equalizer.SelectedPresetName = "Something else";
         profile.ModifiedUtc = DateTime.UtcNow.AddDays(2);
         Assert.True(profile.Matches(settings));
+
+        settings.Bass.ProtectHeadroom = !settings.Bass.ProtectHeadroom;
+        Assert.False(profile.Matches(settings));
+        settings.Bass.ProtectHeadroom = !settings.Bass.ProtectHeadroom;
 
         settings.Volume.BoostPercent = 41;
         Assert.False(profile.Matches(settings));

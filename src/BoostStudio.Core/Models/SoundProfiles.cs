@@ -124,7 +124,8 @@ public sealed class SoundProfile
             settings.Bass.Intensity != Bass.Intensity ||
             Math.Abs(settings.Bass.FrequencyHz - Bass.FrequencyHz) > 0.01 ||
             Math.Abs(settings.Bass.MaxGainDb - Bass.MaxGainDb) > 0.01 ||
-            Math.Abs(settings.Bass.ShelfQ - Bass.ShelfQ) > 0.001)
+            Math.Abs(settings.Bass.ShelfQ - Bass.ShelfQ) > 0.001 ||
+            settings.Bass.ProtectHeadroom != Bass.ProtectHeadroom)
             return false;
 
         if (settings.Volume.Enabled != Volume.Enabled ||

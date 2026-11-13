@@ -41,6 +41,7 @@ public sealed class DspConfigBuilder
         var anyActive = bassActive || volumeActive || eqActive;
 
         var headroom = DspMath.ComputeHeadroomReservationDb(settings);
+        var headroomBoost = DspMath.ComputeHeadroomBoostDb(settings);
         var staticBoost = DspMath.ComputeMaxStaticBoostDb(settings);
         var volumeGain = volumeActive ? settings.Volume.EffectiveBoostDb + settings.Volume.PreampDb : 0;
         var preamp = Math.Round(Math.Clamp(volumeGain + runtimeAgcTrimDb - headroom, -60, 30), 1);
@@ -74,7 +75,9 @@ public sealed class DspConfigBuilder
         builder.AppendLine("Channel: all");
 
         builder.AppendLine();
-        builder.AppendLine("# Combined preamp: volume boost + user trim + runtime AGC - filter headroom.");
+        builder.AppendLine("# Combined preamp: volume boost + user trim + runtime AGC - managed headroom.");
+        builder.AppendLine("# Bass is volume-preserving by default: its shelf gain is not subtracted from");
+        builder.AppendLine("# the preamp, so turning Bass Booster on does not lower mids and highs.");
         builder.AppendLine($"Preamp: {preamp.ToString("0.0", CultureInfo.InvariantCulture)} dB");
 
         var filterIndex = 0;
@@ -84,6 +87,9 @@ public sealed class DspConfigBuilder
             var bass = settings.Bass;
             builder.AppendLine();
             builder.AppendLine($"# Bass Booster: {bass.PresetName} - low shelf, {bass.EffectiveGainDb:0.0} dB at {bass.FrequencyHz:0.#} Hz.");
+            builder.AppendLine(bass.ProtectHeadroom
+                ? "# Safe headroom mode: the shelf gain is also reserved in the preamp, so the whole output is lowered to guarantee no static clipping."
+                : "# Volume-preserving mode: the shelf is boosted without a broadband preamp cut. Near-full-scale bass can clip; enable Protect headroom for a static guarantee.");
             builder.AppendLine($"Filter {++filterIndex}: ON LS Fc {bass.FrequencyHz.ToString("0.#", CultureInfo.InvariantCulture)} Hz Gain {bass.EffectiveGainDb.ToString("0.0", CultureInfo.InvariantCulture)} dB Q {bass.ShelfQ.ToString("0.000", CultureInfo.InvariantCulture)}");
         }
 
@@ -118,9 +124,15 @@ public sealed class DspConfigBuilder
 
         builder.AppendLine();
         if (settings.AutoHeadroom && headroom > 0)
-            builder.AppendLine($"# Auto headroom reserved: -{headroom:0.0} dB (static filter boost {staticBoost:0.0} dB + safety margin).");
+        {
+            var scope = settings.Bass.ProtectHeadroom ? "bass + EQ/loudness" : "EQ/loudness";
+            builder.AppendLine($"# Auto headroom reserved: -{headroom:0.0} dB ({scope} boost {headroomBoost:0.0} dB + safety margin).");
+        }
         else if (!settings.AutoHeadroom)
             builder.AppendLine("# Auto headroom is disabled. Watch the clipping indicator when boosting filters.");
+
+        if (bassActive && !settings.Bass.ProtectHeadroom)
+            builder.AppendLine($"# Total static boost including bass is {staticBoost:0.0} dB; the bass part is intentionally not attenuated.");
 
         if (volumeActive)
         {
@@ -130,7 +142,9 @@ public sealed class DspConfigBuilder
         }
 
         builder.AppendLine("# Note: Equalizer APO 1.4.x has no native sample-accurate limiter. Boost Studio");
-        builder.AppendLine("#       prevents static clipping with headroom and offers optional peak-based AGC.");
+        builder.AppendLine("#       prevents static clipping for managed filters and offers optional peak AGC.");
+        if (bassActive && !settings.Bass.ProtectHeadroom)
+            builder.AppendLine("#       Bass is volume-preserving; very hot bass content may clip without safe mode.");
         builder.AppendLine("# =====================================================================");
 
         var metrics = new DspMetrics(

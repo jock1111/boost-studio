@@ -1,7 +1,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="Boost Studio"
            Manufacturer="Boost Studio"
-           Version="1.1.0"
+           Version="1.1.1"
            UpgradeCode="8197980B-D768-4F0E-9FB3-EB1F8AB80ECF"
            Scope="perUser"
            Compressed="yes">

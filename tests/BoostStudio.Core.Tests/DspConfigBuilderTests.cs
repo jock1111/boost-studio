@@ -89,19 +89,136 @@ public sealed class DspConfigBuilderTests
     }
 
     [Fact]
-    public void AutoHeadroomLowersPreampByMeasuredBoost()
+    public void AutoHeadroomWithBassOnlyKeepsPreampAtUnity()
     {
         var settings = TestSettings.BassOnly();
         settings.AutoHeadroom = true;
         var config = _builder.Build(settings);
 
-        Assert.True(config.Metrics.HeadroomReservedDb > 0);
-        // Auto headroom must reserve the full static boost plus the safety margin.
-        // Reserving less leaves a positive net gain and can clip loud low-frequency content.
-        Assert.Equal(Math.Round(config.Metrics.StaticMaxBoostDb + 0.5, 1),
-            config.Metrics.HeadroomReservedDb, 3);
+        Assert.Equal(0, config.Metrics.HeadroomReservedDb, 3);
+        Assert.Equal(0, config.Metrics.PreampDb, 3);
+        Assert.True(config.Metrics.StaticMaxBoostDb > 8,
+            "The bass shelf is still present; it simply is not subtracted from the preamp.");
+        Assert.Contains("Volume-preserving mode", config.Text, StringComparison.Ordinal);
+        Assert.Contains("intentionally not attenuated", config.Text, StringComparison.Ordinal);
+        Assert.Empty(DspConfigBuilder.Validate(config.Text));
+    }
+
+    [Fact]
+    public void BassBoostDoesNotLowerOneKhzLevel()
+    {
+        var on = TestSettings.BassOnly();
+        on.AutoHeadroom = true;
+        var off = on.Clone();
+        off.Bass.Enabled = false;
+
+        var netOn = NetResponseDb(on, 1000);
+        var netOff = NetResponseDb(off, 1000);
+
+        Assert.InRange(Math.Abs(netOn - netOff), 0, 0.1);
+        Assert.Equal(0, netOn, 2);
+    }
+
+    [Theory]
+    [InlineData(50d)]
+    [InlineData(80d)]
+    [InlineData(100d)]
+    public void BassBoostRaisesLowBassWithoutLoweringMids(double frequency)
+    {
+        var on = TestSettings.BassOnly();
+        on.AutoHeadroom = true;
+        var off = on.Clone();
+        off.Bass.Enabled = false;
+
+        var delta = NetResponseDb(on, frequency) - NetResponseDb(off, frequency);
+
+        Assert.True(delta > 4, $"Expected a clear bass boost at {frequency} Hz, got {delta:+0.0;-0.0} dB.");
+    }
+
+    [Fact]
+    public void VolumeBoosterRemainsIndependentOfBass()
+    {
+        var bassOnly = TestSettings.BassOnly();
+        bassOnly.AutoHeadroom = true;
+
+        var volumeOnly = TestSettings.VolumeOnly();
+        volumeOnly.AutoHeadroom = true;
+
+        var combined = bassOnly.Clone();
+        combined.Volume.Enabled = true;
+        combined.Volume.BoostPercent = volumeOnly.Volume.BoostPercent;
+        combined.Volume.CeilingDb = volumeOnly.Volume.CeilingDb;
+        combined.Volume.PreampDb = volumeOnly.Volume.PreampDb;
+        combined.Volume.Loudness = 0;
+
+        var bassConfig = _builder.Build(bassOnly);
+        var volumeConfig = _builder.Build(volumeOnly);
+        var combinedConfig = _builder.Build(combined);
+
+        Assert.Equal(0, bassConfig.Metrics.PreampDb, 3);
+        Assert.Equal(volumeConfig.Metrics.PreampDb, combinedConfig.Metrics.PreampDb, 3);
+        Assert.Equal(volumeConfig.Metrics.VolumeGainDb, combinedConfig.Metrics.VolumeGainDb, 3);
+        Assert.True(combinedConfig.Metrics.BassActive);
+        Assert.True(combinedConfig.Metrics.VolumeActive);
+    }
+
+    [Fact]
+    public void CombinedBassAndVolumeAddIndependently()
+    {
+        var volumeOnly = TestSettings.VolumeOnly();
+        volumeOnly.AutoHeadroom = true;
+
+        var combined = volumeOnly.Clone();
+        combined.Bass.Enabled = true;
+        combined.Bass.Intensity = 60;
+        combined.Bass.FrequencyHz = 80;
+        combined.Bass.MaxGainDb = 15;
+        combined.Bass.ShelfQ = 0.707;
+
+        var volumeNet1k = NetResponseDb(volumeOnly, 1000);
+        var combinedNet1k = NetResponseDb(combined, 1000);
+        var volumeNet60 = NetResponseDb(volumeOnly, 60);
+        var combinedNet60 = NetResponseDb(combined, 60);
+
+        Assert.Equal(volumeNet1k, combinedNet1k, 1);
+        Assert.True(combinedNet60 - volumeNet60 > 5,
+            "The combined config should add the bass shelf on top of the volume gain.");
+    }
+
+    [Fact]
+    public void ProtectHeadroomRestoresStaticClippingProtection()
+    {
+        var settings = TestSettings.BassOnly();
+        settings.AutoHeadroom = true;
+        settings.Bass.ProtectHeadroom = true;
+        var config = _builder.Build(settings);
+
+        Assert.True(config.Metrics.HeadroomReservedDb > 8);
         Assert.Equal(Math.Round(-config.Metrics.HeadroomReservedDb, 1), config.Metrics.PreampDb, 3);
-        Assert.Contains("Auto headroom reserved", config.Text, StringComparison.Ordinal);
+        Assert.Contains("Safe headroom mode", config.Text, StringComparison.Ordinal);
+
+        // A controlled -12 dBFS bass tone stays below full scale after the shelf and preamp.
+        var worstNetGain = DspMath.ComputeMaxStaticBoostDb(settings) + config.Metrics.PreampDb;
+        Assert.True(-12 + worstNetGain < 0,
+            $"A -12 dBFS input would reach {-12 + worstNetGain:+0.0;-0.0} dBFS.");
+    }
+
+    [Fact]
+    public void TogglingBassDoesNotChangeBroadbandGain()
+    {
+        var on = TestSettings.BassOnly();
+        on.AutoHeadroom = true;
+        var off = on.Clone();
+        off.Bass.Enabled = false;
+
+        var onConfig = _builder.Build(on);
+        var offConfig = _builder.Build(off);
+
+        Assert.Equal(offConfig.Metrics.PreampDb, onConfig.Metrics.PreampDb, 3);
+        Assert.Equal(offConfig.Metrics.VolumeGainDb, onConfig.Metrics.VolumeGainDb, 3);
+        Assert.Equal(offConfig.Metrics.HeadroomReservedDb, onConfig.Metrics.HeadroomReservedDb, 3);
+        Assert.Equal(offConfig.Metrics.FilterCount + 1, onConfig.Metrics.FilterCount);
+        Assert.Equal(NetResponseDb(off, 1000), NetResponseDb(on, 1000), 1);
     }
 
     [Fact]
@@ -228,5 +345,12 @@ public sealed class DspConfigBuilderTests
         Assert.Equal(0, config.Metrics.HeadroomReservedDb, 3);
         Assert.Equal(0, config.Metrics.PreampDb, 3);
         Assert.Contains("Auto headroom is disabled", config.Text, StringComparison.Ordinal);
+    }
+
+    private double NetResponseDb(AppSettings settings, double frequency)
+    {
+        var config = _builder.Build(settings);
+        return DspMath.EvaluateResponseDb(DspMath.BuildStaticFilters(settings), frequency, 48000) +
+               config.Metrics.PreampDb;
     }
 }

@@ -10,16 +10,19 @@ Latest result:
 
 ```text
 dotnet test BoostStudio.sln -c Debug
-Passed! - Failed: 0, Passed: 136, Skipped: 0, Total: 136
+Passed! - Failed: 0, Passed: 147, Skipped: 0, Total: 147
 ```
 
 The suite targets `BoostStudio.Core` and covers:
 
 - **DspMathTests** — peaking/low-shelf/high-shelf math, filter building, maximum
-  static boost, headroom reservation, response evaluation.
+  static boost, volume-preserving vs. safe-mode headroom reservation, bass
+  selectivity (flat at 1 kHz, boost at 50–100 Hz), response evaluation.
 - **DspConfigBuilderTests** — Bass/Volume/Equalizer independence (including all
-  ON/OFF combinations), master bypass, auto headroom, AGC runtime trim, device
-  scope syntax, generated configuration grammar.
+  ON/OFF combinations), 1 kHz level preservation, 50–100 Hz bass gain, combined
+  operation, Protect-headroom static protection, smooth module toggling, master
+  bypass, auto headroom, AGC runtime trim, device scope syntax, generated
+  configuration grammar.
 - **AutoGainControllerTests** — disabled state, first-frame handling, attack
   rate limiting, clamp at −24 dB, recovery, reset, disable, long-gap reset.
 - **FftAndSpectrumTests** — FFT correctness, buffer validation, bass detection,
@@ -50,26 +53,50 @@ The suite targets `BoostStudio.Core` and covers:
 ## Build Results
 
 - Debug build: 0 warnings, 0 errors.
-- `dotnet test BoostStudio.sln -c Debug`: 136 passed, 0 failed.
+- `dotnet test BoostStudio.sln -c Debug`: 147 passed, 0 failed.
 - Release publish: self-contained single-file `artifacts\publish-x64\BoostStudio.exe`,
-  version 1.1.0 (`1.1.0+6f8c1e9d8346970c450367ec13628bb925a04c3e`),
-  171,869,753 bytes (~164 MiB), SHA-256
-  `32DC6DC8A2F1AFDE36F3DA7F5F6AB905DCA7BEB5DA37607129ECCDB3804B93CB`.
-- Portable ZIP: `artifacts\BoostStudio-1.1.0-win-x64-portable.zip`,
-  70,007,880 bytes (~66.8 MiB), SHA-256
-  `5450A7633193A2782A6438CEBFBDB9C19D803E6886BC65A11313FCDD878C23C9`.
-- MSI: `artifacts\BoostStudio-1.1.0-win-x64.msi`, 56,360,960 bytes (~53.8 MiB),
-  SHA-256 `52D48320DA5CF300A9CC59E42B4583BC8B1302ACBBC7BAC68A17D582C114A599`,
+  version 1.1.1 (`1.1.1+77acdbaafc98664432e6b760d9b72b7dd89e3d17`),
+  171,875,897 bytes (~164 MiB), SHA-256
+  `52640A4D854713ECDEA99F0BEF4F51701F4036A22D6AF023F3914EAAF04460BC`.
+- Portable ZIP: `artifacts\BoostStudio-1.1.1-win-x64-portable.zip`,
+  70,011,942 bytes (~66.8 MiB), SHA-256
+  `3E4FA8348F3B871D6ABFC6BFF71CE36AAD0460519BEA1F300B2BF4BC883AE812`.
+- MSI: `artifacts\BoostStudio-1.1.1-win-x64.msi`, 56,369,152 bytes (~53.8 MiB),
+  SHA-256 `16D7E92EC5E7CBD5395A6F0C151B3A664FCFC283B20874E97E75A7DC8B277DEC`,
   built with WiX Toolset 5.0.2.
-- The 1.1.0 MSI was built but not silently installed/uninstalled in this run;
-  the previous 1.0.0 MSI smoke test is recorded below for reference.
+- The 1.1.1 MSI was silently installed and uninstalled on this machine: both
+  operations exited 0, the installed EXE reported version 1.1.1.0, and its
+  `--audio-self-test` also passed. The previous 1.0.0 MSI smoke test is recorded
+  below for reference.
 
 ## Real System Smoke Tests
 
 These tests ran on the actual development machine with Equalizer APO 1.4.2
 installed.
 
-### Measured audio self-test (Boost Studio 1.1.0)
+### Measured bass volume-preservation (Boost Studio 1.1.1)
+
+`artifacts\publish-x64\BoostStudio.exe --audio-self-test` was run on this
+machine's APO-enabled default output, `Headphones (JBL LIVE660NC)`, at 48 kHz,
+2 channels. It exited 0 and wrote
+`%LOCALAPPDATA%\BoostStudio\diagnostics\audio-self-test-20261112-171547.txt`.
+
+The bass test configuration is generated with **auto headroom enabled** and
+**Protect headroom disabled**, so it measures the default volume-preserving
+path rather than a special test-only bypass.
+
+- Current DSP configuration (Bass Booster on): 1 kHz baseline **−24.9 dBFS**;
+  flat reference **−24.9 dBFS** → **0.0 dB** broadband change.
+- Bass Booster low shelf at 55 Hz: measured **+8.3 dB** (DSP prediction +8.3 dB).
+- Bass Booster selectivity at 1 kHz: measured **+0.1 dB** (DSP prediction
+  +0.1 dB).
+- −18 dB preamp step: measured **−18.2 dB** (expected −18.0 dB).
+- Volume Booster preamp: measured **+12.0 dB** (expected +12.0 dB).
+
+Measured values come from WASAPI loopback; expected values are DSP predictions.
+The installed 1.1.1 MSI produced the same measurements before it was uninstalled.
+
+### Measured audio self-test (Boost Studio 1.1.0, historical)
 
 `artifacts\publish-x64\BoostStudio.exe --audio-self-test` was run with the
 processing scope temporarily pinned to `Speakers (4- HyperX QuadCast S)`. It
@@ -184,8 +211,10 @@ When an output has Equalizer APO enabled:
    responses.
 9. Toggle each module OFF in turn and confirm only that module's effect
    disappears.
-10. Use a near-full-scale signal and confirm the reported net gain includes the
-    automatic headroom subtraction. AGC is a slow controller, not a limiter.
+10. Use a near-full-scale signal and confirm the clipping warning appears. In the
+    default volume-preserving bass mode the shelf is not subtracted from the
+    preamp, so very hot bass can clip; enable **Protect headroom** for a static
+    no-clipping guarantee. AGC is a slow controller, not a limiter.
 
 The automated `--audio-self-test` loopback procedure covers the controlled-tone
 portion of this checklist on an APO-enabled endpoint. Steps that require

@@ -20,8 +20,18 @@ Bass Booster applies a low-shelf filter to increase low-frequency energy.
 - **Deep Bass** — Broad, room-filling sub foundation.
 - **Punchy Bass** — Focused upper-bass impact for kick drums and electronic music.
 - **Sub-Bass** — Very low extension for subwoofers.
-- **Extreme Bass** — Maximum bass energy. Auto headroom is strongly recommended.
+- **Extreme Bass** — Maximum bass energy. If the output clips, lower intensity or enable **Protect headroom**.
 - **Custom** — Your own settings.
+
+### Clipping protection
+
+Bass Booster is **volume-preserving** by default: the low shelf is boosted
+without a broadband preamp cut, so mids and highs keep their original level.
+A low shelf is essentially flat at 1 kHz, so enabling Bass Booster does not
+make music quieter. Very hot, near-full-scale bass content can still clip; the
+app shows a clipping warning. **Protect headroom** is the optional safe mode
+that also reserves the shelf gain in the preamp, which guarantees no static
+clipping from the filter but lowers the whole output by the bass amount.
 
 ### Visualization
 
@@ -42,9 +52,12 @@ Volume Booster adds digital gain and optional loudness contour. It does not use 
 ### Headroom and net gain
 
 When **Auto Headroom** is enabled, Boost Studio reserves preamp headroom equal to
-the maximum combined static filter boost (bass + EQ + loudness) plus a 0.5 dB
-safety margin. The Volume page shows **Net gain (preamp)** after that subtraction,
-not just the requested boost. AGC can add further runtime trim.
+the maximum static **EQ and loudness** boost plus a 0.5 dB safety margin. Bass
+Booster is excluded by default so it does not lower the rest of the spectrum.
+With **Protect headroom** enabled on the Bass page, the bass shelf gain is added
+to that reservation for a static no-clipping guarantee. The Volume page shows
+**Net gain (preamp)** after the subtraction, not just the requested boost. AGC
+can add further runtime trim.
 
 Bass Booster and Volume Booster are independent. Turning one off leaves the
 other's DSP, parameters and persisted state untouched. The four ON/OFF

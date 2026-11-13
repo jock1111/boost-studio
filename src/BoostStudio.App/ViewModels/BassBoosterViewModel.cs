@@ -66,6 +66,26 @@ public sealed class BassBoosterViewModel : ObservableObject
             nameof(ShelfQ));
     }
 
+    /// <summary>
+    /// Optional static safe mode. When enabled, auto headroom also reserves the bass
+    /// shelf gain, which guarantees no static clipping but lowers the whole output.
+    /// </summary>
+    public bool ProtectHeadroom
+    {
+        get => _settings.Bass.ProtectHeadroom;
+        set
+        {
+            if (_settings.Bass.ProtectHeadroom == value) return;
+            _settings.Bass.ProtectHeadroom = value;
+            OnPropertyChanged(nameof(ProtectHeadroom), nameof(HeadroomDescription));
+            _changed();
+        }
+    }
+
+    public string HeadroomDescription => ProtectHeadroom
+        ? "Safe mode: the shelf gain is reserved in the preamp. Clipping is prevented statically, but the whole output is lowered by the bass amount."
+        : "Volume-preserving: bass is boosted without lowering mids or highs. Very hot bass content can clip; enable safe mode for a static guarantee.";
+
     public double EffectiveGainDb => _settings.Bass.EffectiveGainDb;
     public string GainText => $"{EffectiveGainDb:+0.0;-0.0;0.0} dB";
     public string FrequencyText => $"{_settings.Bass.FrequencyHz:0.#} Hz";
@@ -175,9 +195,9 @@ public sealed class BassBoosterViewModel : ObservableObject
     public void ReloadFromSettings()
     {
         OnPropertyChanged(nameof(Enabled), nameof(Intensity), nameof(FrequencyHz), nameof(MaxGainDb),
-            nameof(ShelfQ), nameof(SelectedPreset), nameof(EffectiveGainDb), nameof(GainText),
-            nameof(FrequencyText), nameof(EffectiveGainDescription), nameof(QText), nameof(Description),
-            nameof(StatusText), nameof(ActiveLabel));
+            nameof(ShelfQ), nameof(ProtectHeadroom), nameof(SelectedPreset), nameof(EffectiveGainDb),
+            nameof(GainText), nameof(FrequencyText), nameof(EffectiveGainDescription), nameof(QText),
+            nameof(Description), nameof(HeadroomDescription), nameof(StatusText), nameof(ActiveLabel));
         UpdateResponse();
     }
 }

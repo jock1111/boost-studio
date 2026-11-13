@@ -38,9 +38,16 @@ required; loopback measurement cannot prove subjective audibility.
 Equalizer APO 1.4.x static filters do not include a native limiter. Boost Studio
 does **not** claim to have a sample-accurate limiter.
 
-- **Auto Headroom** reserves preamp headroom equal to the maximum combined static
-  filter boost (bass + EQ + loudness) plus a 0.5 dB safety margin. This prevents
-  static clipping from the filters themselves.
+- **Auto Headroom** reserves preamp headroom for the maximum static EQ and
+  loudness boost plus a 0.5 dB safety margin. Bass Booster is deliberately
+  excluded so turning it on does not lower mids and highs.
+- **Volume-preserving Bass Booster** boosts the low shelf without a broadband
+  preamp cut. The shelf is essentially flat at 1 kHz, so the rest of the
+  spectrum keeps its original level. Very hot, near-full-scale bass content can
+  still clip in this mode; the UI shows a clipping warning.
+- **Protect headroom** is the optional safe mode for Bass Booster. It also
+  reserves the shelf gain in the preamp, which guarantees no static clipping
+  from the filter but lowers the entire output by the bass amount.
 - **Peak AGC** is a slow, real-output peak-based controller. It reduces gain in
   0.5–6 dB steps after measuring loopback peaks. It protects output over time,
   not sample-by-sample.

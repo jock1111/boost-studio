@@ -928,7 +928,7 @@ public sealed class SettingsViewModel : ObservableObject
         builder.AppendLine("Settings summary");
         builder.AppendLine($"  Processing enabled: {_settings.ProcessingEnabled}");
         builder.AppendLine($"  Auto headroom: {_settings.AutoHeadroom}");
-        builder.AppendLine($"  Bass: enabled={_settings.Bass.Enabled}, intensity={_settings.Bass.Intensity}%, frequency={_settings.Bass.FrequencyHz} Hz, maxGain={_settings.Bass.MaxGainDb} dB, Q={_settings.Bass.ShelfQ}, preset={_settings.Bass.PresetName}");
+        builder.AppendLine($"  Bass: enabled={_settings.Bass.Enabled}, intensity={_settings.Bass.Intensity}%, frequency={_settings.Bass.FrequencyHz} Hz, maxGain={_settings.Bass.MaxGainDb} dB, Q={_settings.Bass.ShelfQ}, protectHeadroom={_settings.Bass.ProtectHeadroom}, preset={_settings.Bass.PresetName}");
         builder.AppendLine($"  Volume: enabled={_settings.Volume.Enabled}, boost={_settings.Volume.BoostPercent}% of {_settings.Volume.CeilingDb} dB, trim={_settings.Volume.PreampDb} dB, loudness={_settings.Volume.Loudness}%, AGC={_settings.Volume.AutoGainControl}");
         builder.AppendLine($"  Equalizer: enabled={_settings.Equalizer.Enabled}, preset={_settings.Equalizer.SelectedPresetName}, gains=[{string.Join(", ", _settings.Equalizer.GainsDb.Select(g => g.ToString("0.0", CultureInfo.InvariantCulture)))}]");
         builder.AppendLine($"  Monitoring default device: {_settings.Audio.MonitorDefaultDevice}");

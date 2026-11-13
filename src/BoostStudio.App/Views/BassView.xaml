@@ -199,8 +199,25 @@
                     </ListBox>
 
                     <Border Style="{StaticResource Divider}" Margin="0,13,0,10" />
-                    <TextBlock Text="Auto headroom reserves the maximum possible shelf gain so strong curves do not push the output into hard clipping. Extreme Bass intentionally uses the full 24 dB range."
-                               Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Protect headroom (safe mode)" FontSize="12" FontWeight="SemiBold" />
+                            <TextBlock Text="Optional static clipping protection for Bass Booster"
+                                       Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  IsChecked="{Binding ProtectHeadroom, Mode=TwoWay}"
+                                  VerticalAlignment="Center" Margin="12,0,0,0"
+                                  ToolTip="Reserve the bass shelf gain in the preamp. Guarantees no static clipping, but lowers overall output." />
+                    </Grid>
+                    <TextBlock Text="{Binding HeadroomDescription}"
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <TextBlock Text="Extreme Bass intentionally uses the full 24 dB range."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,5,0,0" />
                 </StackPanel>
             </Border>
         </Grid>
@@ -259,6 +276,18 @@
                                        Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0" />
                         </StackPanel>
                     </Grid>
+
+                    <Border Background="#2B181A" BorderBrush="#6B2C2E" BorderThickness="1"
+                            CornerRadius="9" Padding="10,7" Margin="0,12,0,0"
+                            Visibility="{Binding Monitor.ClipWarning, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                       Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Output is clipping. Lower bass intensity or enable Protect headroom."
+                                       FontSize="11" Foreground="#FFC7C3" Margin="8,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 

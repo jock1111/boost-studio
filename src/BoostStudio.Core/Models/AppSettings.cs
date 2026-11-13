@@ -13,7 +13,11 @@ public sealed class AppSettings
     /// <summary>Master processing switch. False writes a bypass include; module state is retained.</summary>
     public bool ProcessingEnabled { get; set; } = true;
 
-    /// <summary>Global headroom compensation for positive filter gain (bass + EQ + loudness).</summary>
+    /// <summary>
+    /// Reserves headroom for positive EQ and loudness filter gain. Bass Booster is
+    /// excluded unless <see cref="BassSettings.ProtectHeadroom"/> is enabled, so enabling
+    /// bass does not permanently attenuate mids and highs.
+    /// </summary>
     public bool AutoHeadroom { get; set; } = true;
 
     public BassSettings Bass { get; set; } = new();
@@ -145,6 +149,14 @@ public sealed class BassSettings
     /// <summary>Equalizer APO low-shelf Q (0.3-1.4). Lower = broader, higher = more upper-bass bite.</summary>
     public double ShelfQ { get; set; } = 0.707;
 
+    /// <summary>
+    /// When false (default), Bass Booster is volume-preserving: the bass shelf is boosted
+    /// without a broadband preamp cut, so mids and highs keep their original level.
+    /// When true, auto headroom also reserves the shelf's full static gain, which prevents
+    /// clipping but lowers the entire output by that amount (the old behavior).
+    /// </summary>
+    public bool ProtectHeadroom { get; set; }
+
     public string PresetName { get; set; } = BassPresets.Custom;
 
     [JsonIgnore]
@@ -167,6 +179,7 @@ public sealed class BassSettings
         FrequencyHz = other.FrequencyHz;
         MaxGainDb = other.MaxGainDb;
         ShelfQ = other.ShelfQ;
+        ProtectHeadroom = other.ProtectHeadroom;
         PresetName = other.PresetName;
     }
 }
@@ -386,7 +399,7 @@ public sealed class HotkeySettings
 public static class AppInfo
 {
     public const string ProductName = "Boost Studio";
-    public const string Version = "1.1.0";
+    public const string Version = "1.1.1";
     public const int SettingsSchemaVersion = 2;
     public const string Tagline = "System-wide sound shaping";
 

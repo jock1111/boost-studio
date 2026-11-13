@@ -18,8 +18,10 @@ optional loudness contour.
 
 ## Features
 
-- **Bass Booster** — Low-shelf filter with adjustable intensity (0–100%), corner
-  frequency (20–250 Hz), shelf Q, and five presets.
+- **Bass Booster** — Volume-preserving low-shelf filter with adjustable intensity
+  (0–100%), corner frequency (20–250 Hz), shelf Q, and five presets. Turning it
+  on boosts bass without lowering mids or highs; an optional **Protect headroom**
+  safe mode restores full static clipping protection at the cost of overall level.
 - **Volume Booster** — Digital gain stage with a ceiling, manual trim, optional
   loudness contour (off by default), optional slow peak AGC, automatic headroom,
   peak meter, and clip warning. The UI shows the honest net gain after headroom.
@@ -70,10 +72,10 @@ optional loudness contour.
 Download the latest release from the
 [GitHub Releases page](https://github.com/jock1111/boost-studio/releases):
 
-- `BoostStudio-1.1.0-win-x64.msi` — per-user installer. It installs to
+- `BoostStudio-1.1.1-win-x64.msi` - per-user installer. It installs to
   `%LOCALAPPDATA%\Programs\Boost Studio` and does **not** require administrator
   rights. A Start Menu shortcut is created.
-- `BoostStudio-1.1.0-win-x64-portable.zip` — portable build. Extract it anywhere
+- `BoostStudio-1.1.1-win-x64-portable.zip` - portable build. Extract it anywhere
   and run `BoostStudio.exe`.
 
 SHA-256 hashes for each release asset are listed in the release notes.
@@ -119,14 +121,15 @@ Boost Studio distinguishes these states:
 Boost Studio can confirm steps 1–3 without elevation remaining active. **Step 4
 is only claimed after the measured loopback self-test passes.** The last measured
 verification on the development machine used the Equalizer APO–enabled
-`Speakers (4- HyperX QuadCast S)` endpoint and passed every step: the −18 dB
-preamp test measured −18.0 dB, the +6 dB volume test measured +6.0 dB, and the
-bass test measured +8.3 dB at 55 Hz with +0.1 dB at 1 kHz. A separate process
-playing through the same endpoint measured +5.9 dB, confirming shared post-mix
-processing. If Windows switches to an output where Equalizer APO is not
-registered, Boost Studio reports `APO not enabled` and offers a confirmed
-one-click switch to an output that is enabled. See [LIMITATIONS.md](LIMITATIONS.md)
-and [TESTING.md](TESTING.md) for the exact evidence and current environment.
+`Headphones (JBL LIVE660NC)` endpoint and passed every step: the −18 dB preamp
+test measured −18.2 dB, the volume test measured +12.0 dB, and the
+volume-preserving bass test measured +8.3 dB at 55 Hz with +0.1 dB at 1 kHz.
+A separate process playing through an earlier APO-enabled endpoint measured
++5.9 dB, confirming shared post-mix processing. If Windows switches to an output
+where Equalizer APO is not registered, Boost Studio reports `APO not enabled`
+and offers a confirmed one-click switch to an output that is enabled. See
+[LIMITATIONS.md](LIMITATIONS.md) and [TESTING.md](TESTING.md) for the exact
+evidence and current environment.
 
 ## Build and test
 
@@ -142,14 +145,14 @@ dotnet publish src\BoostStudio.App\BoostStudio.App.csproj -c Release -r win-x64 
 The MSI is built with WiX Toolset 5:
 
 ```powershell
-wix build installer\BoostStudio.wxs -arch x64 -o artifacts\BoostStudio-1.1.0-win-x64.msi
+wix build installer\BoostStudio.wxs -arch x64 -o artifacts\BoostStudio-1.1.1-win-x64.msi
 ```
 
 ## Documentation
 
 - [User Guide](USER-GUIDE.md) — configuration, device scope, permissions, troubleshooting
 - [Limitations](LIMITATIONS.md) — no limiter, no ASIO, unverified audio, environment limits
-- [Testing](TESTING.md) — 136 automated tests, measured loopback evidence, real smoke tests, pending verification
+- [Testing](TESTING.md) - 147 automated tests, measured loopback evidence, real smoke tests, pending verification
 - [Third-Party Notices](THIRD-PARTY-NOTICES.md) — dependencies and licenses
 
 ## License

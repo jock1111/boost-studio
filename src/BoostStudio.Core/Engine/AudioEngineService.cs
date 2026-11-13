@@ -820,7 +820,10 @@ public sealed class AudioEngineService : IDisposable
     {
         var copy = CloneSettings(settings);
         copy.ProcessingEnabled = true;
-        copy.AutoHeadroom = false;
+        // Exercise the default volume-preserving path: auto headroom is on but the
+        // bass shelf is excluded, so the 1 kHz measurement must not be attenuated.
+        copy.AutoHeadroom = true;
+        copy.Bass.ProtectHeadroom = false;
         copy.Volume.Enabled = false;
         copy.Volume.Loudness = 0;
         copy.Equalizer.Enabled = false;

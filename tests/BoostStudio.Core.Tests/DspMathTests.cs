@@ -30,7 +30,7 @@ public sealed class DspMathTests
     }
 
     [Fact]
-    public void FullHeadroomKeepsEveryFrequencyBelowUnity()
+    public void ProtectHeadroomKeepsEveryFrequencyBelowUnity()
     {
         var settings = AppSettings.CreateDefault();
         settings.AutoHeadroom = true;
@@ -39,6 +39,7 @@ public sealed class DspMathTests
         settings.Bass.MaxGainDb = 24;
         settings.Bass.FrequencyHz = 45;
         settings.Bass.ShelfQ = 0.55;
+        settings.Bass.ProtectHeadroom = true;
         settings.Volume.Enabled = false;
         settings.Volume.Loudness = 0;
         settings.Equalizer.Enabled = true;
@@ -49,7 +50,7 @@ public sealed class DspMathTests
         var reserved = DspMath.ComputeHeadroomReservationDb(settings);
         var filters = DspMath.BuildStaticFilters(settings);
 
-        // The reservation must cover the measured peak boost plus the safety margin;
+        // Safe mode must cover the measured peak boost plus the safety margin;
         // reserving only part of the boost leaves a positive net gain and can clip.
         Assert.True(reserved >= Math.Round(staticBoost + 0.5, 1) - 0.001,
             $"Reserved {reserved:0.0} dB for a measured {staticBoost:0.0} dB boost.");
@@ -58,8 +59,33 @@ public sealed class DspMathTests
         {
             var netGain = DspMath.EvaluateResponseDb(filters, frequency) - reserved;
             Assert.True(netGain <= 0.01,
-                $"Net gain at {frequency:0} Hz is {netGain:+0.00;-0.00;0.00} dB with full headroom.");
+                $"Net gain at {frequency:0} Hz is {netGain:+0.00;-0.00;0.00} dB with safe headroom.");
         }
+    }
+
+    [Fact]
+    public void DefaultHeadroomExcludesBassShelf()
+    {
+        var settings = TestSettings.BassOnly();
+        settings.AutoHeadroom = true;
+
+        Assert.Equal(0, DspMath.ComputeHeadroomReservationDb(settings), 3);
+        Assert.Equal(0, DspMath.ComputeHeadroomBoostDb(settings), 3);
+        Assert.True(DspMath.ComputeMaxStaticBoostDb(settings) > 8,
+            "The bass shelf itself should still be a meaningful boost.");
+    }
+
+    [Fact]
+    public void ProtectHeadroomIncludesBassShelf()
+    {
+        var settings = TestSettings.BassOnly();
+        settings.AutoHeadroom = true;
+        settings.Bass.ProtectHeadroom = true;
+
+        var headroom = DspMath.ComputeHeadroomReservationDb(settings);
+
+        Assert.True(headroom > 8, $"Expected the shelf gain to be reserved, got {headroom} dB.");
+        Assert.Equal(Math.Round(DspMath.ComputeMaxStaticBoostDb(settings) + 0.5, 1), headroom, 3);
     }
 
     [Fact]
@@ -170,7 +196,7 @@ public sealed class DspMathTests
     }
 
     [Fact]
-    public void MaxBoostAndHeadroomArePositiveAndReserveSafetyMargin()
+    public void MaxBoostAndHeadroomReserveSafetyMarginForManagedFilters()
     {
         var settings = TestSettings.EqualizerOnly();
         settings.AutoHeadroom = true;
@@ -181,11 +207,15 @@ public sealed class DspMathTests
         settings.Bass.MaxGainDb = 12;
 
         var maxBoost = DspMath.ComputeMaxStaticBoostDb(settings);
+        var managedBoost = DspMath.ComputeHeadroomBoostDb(settings);
         var headroom = DspMath.ComputeHeadroomReservationDb(settings);
 
         Assert.True(maxBoost > 10, $"Expected a meaningful combined boost, got {maxBoost} dB.");
-        Assert.InRange(headroom, maxBoost + 0.4, maxBoost + 0.6);
-        Assert.Equal(Math.Round(maxBoost + 0.5, 1), headroom, 3);
+        Assert.True(managedBoost > 0, "EQ and loudness should still reserve headroom.");
+        Assert.True(managedBoost < maxBoost,
+            "The bass shelf must not be part of the default headroom reservation.");
+        Assert.InRange(headroom, managedBoost + 0.4, managedBoost + 0.6);
+        Assert.Equal(Math.Round(managedBoost + 0.5, 1), headroom, 3);
     }
 
     [Fact]
@@ -209,6 +239,19 @@ public sealed class DspMathTests
         Assert.Equal(
             DspMath.EvaluateBassResponseDb(settings.Bass, frequency, SampleRate),
             DspMath.EvaluateResponseDb(filters, frequency, SampleRate), 6);
+    }
+
+    [Fact]
+    public void BassShelfIsFlatAtOneKhzAndBoostsLowBass()
+    {
+        var settings = TestSettings.BassOnly();
+        var filters = DspMath.BuildBassFilters(settings.Bass);
+
+        Assert.InRange(Math.Abs(DspMath.EvaluateResponseDb(filters, 1000, SampleRate)), 0, 0.1);
+        Assert.True(DspMath.EvaluateResponseDb(filters, 50, SampleRate) > 6,
+            "50 Hz should receive most of the shelf gain.");
+        Assert.True(DspMath.EvaluateResponseDb(filters, 100, SampleRate) > 4,
+            "100 Hz should also receive a clear boost.");
     }
 
     [Fact]
